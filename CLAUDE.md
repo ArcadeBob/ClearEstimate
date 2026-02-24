@@ -4,57 +4,66 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-ClearEstimate — a software project estimation tool. Repository is in early setup; update this file as the stack solidifies.
+ClearEstimate — a glazing contractor estimation tool replacing spreadsheet-based workflows. Phase 1 is a React SPA with localStorage persistence. The calculation engine handles material, labor, equipment, and markup computations for glass/aluminum system takeoffs.
 
 ## Build & Test Commands
 
-<!-- Update these once package.json / build tooling is added -->
 ```
-npm install          # install dependencies
-npm run dev          # start dev server
-npm run build        # production build
-npm run test         # run full test suite
-npm run test -- <file>  # run a single test file
-npm run lint         # lint with Trunk or configured linter
+npm install                    # install dependencies
+npm run dev                    # start Vite dev server (localhost:5173)
+npm run build                  # production build (tsc -b && vite build)
+npm run verify                 # run 37-assertion calc verification script
+npm run lint                   # TypeScript type-check (tsc -b)
+npm run preview                # preview production build locally
 ```
 
-> **Note:** No package.json exists yet. Replace the commands above with actual scripts once the project is scaffolded.
+No test framework is configured in Phase 1. Use `npm run verify` to validate the calculation engine (scripts/verify-calc.ts).
 
 ## Architecture
 
-- **Entry point:** TBD (e.g., `src/main.ts` or `src/index.tsx` once created)
-- **Primary language:** JavaScript / TypeScript (Node.js)
-- **Secondary language:** Python (utilities / backend)
-- **Code quality:** Trunk.io (`.trunk/`)
-- **Environment config:** `.env` / `.env.local` (never committed)
+- **Entry point:** `src/main.tsx` → `App.tsx`
+- **Framework:** React 19 + TypeScript 5 (strict mode) + Vite 6
+- **Styling:** Tailwind CSS v4 (CSS-first, no config file)
+- **Routing:** React Router 7 (`createBrowserRouter` from `"react-router"`, `RouterProvider` from `"react-router/dom"`)
+- **Charts:** Recharts 2.x (with `react-is@^19` peer dep)
+- **State:** React Context + useState with 500ms debounced localStorage persistence
+- **Storage key:** `cgi_estimating_app_v1` (with schema versioning)
 
 ### Key Patterns
 
-- TBD — document state management, routing, and data-flow patterns here as they are introduced.
+- **State management:** Single `AppStoreProvider` (Context + useState) wraps the app. All state changes go through hooks (`use-projects`, `use-line-items`, etc.) that call `setState` on the context.
+- **Auto-persist:** The app store debounces localStorage writes by 500ms and flushes on `beforeunload`.
+- **Calculation flow:** Pure functions in `src/calc/` compute derived values. `calcFullLineItem()` orchestrates per-line-item calculations. Hooks call calc functions on every update.
+- **Routing:** URL-derived project context (no stored `activeProjectId`). `ProjectGuard` redirects invalid `:id` params to Dashboard.
+- **O&P formula:** Multiplicative — `contractValue = adjustedSubtotal × (1 + OH%) × (1 + profit%)`. Profit is applied AFTER overhead.
 
 ## Key Files
 
 | Path | Purpose |
 |------|---------|
-| `CLAUDE.md` | Guidance for Claude Code sessions |
-| `.gitignore` | Ignore rules for Node, Python, env, build artifacts |
-| `decisions/` | Architecture Decision Records (ADRs) |
-| `archive/` | Archived specs and reference material |
-| `.claude/` | Claude Code local settings |
-
-<!-- Add rows as the project grows, e.g.: -->
-<!-- | `src/main.ts` | Application entry point | -->
-<!-- | `src/routes/` | Page / API route definitions | -->
-<!-- | `tests/` | Test suites | -->
+| `src/main.tsx` | Application entry point (AppStoreProvider → App) |
+| `src/App.tsx` | Router configuration (5 views + ProjectGuard) |
+| `src/types/index.ts` | All TypeScript interfaces (Project, LineItem, etc.) |
+| `src/calc/` | Pure calculation functions (8 modules + formatCurrency) |
+| `src/hooks/` | React hooks for state management (5 hooks) |
+| `src/views/` | Page-level components (Dashboard, Setup, Takeoff, Summary, Settings) |
+| `src/components/` | Shared UI components (Layout, Sidebar, Breadcrumb, etc.) |
+| `src/data/` | Seed data (14 glass types, 5 frames, 21 systems, etc.) |
+| `src/storage/storage-service.ts` | localStorage CRUD with schema versioning |
+| `scripts/verify-calc.ts` | 37-assertion calculation verification script |
+| `CONSTRAINTS.md` | Active constraints registry (C-xxx, I-xxx, B-xxx) |
+| `SUCCESS.md` | Phase 1 Definition of Done |
+| `public/_redirects` | Netlify SPA fallback routing |
 
 ## Code Conventions
 
 - Follow existing patterns in the codebase before introducing new ones.
-- Use TypeScript strict mode when TS is configured.
-- Prefer named exports over default exports.
+- TypeScript strict mode with `noUncheckedIndexedAccess: true`.
+- Prefer named exports over default exports (exception: `App.tsx` default export for Vite).
 - Keep files focused — one component/module per file.
-- Environment variables must be accessed through a single config module (once created).
-- Commit messages: imperative mood, concise subject line (≤72 chars).
+- All currency display uses `formatCurrency()` from `@/calc` (C-017).
+- React Router imports from `"react-router"` not `"react-router-dom"` (B-004).
+- Commit messages: imperative mood, concise subject line (72 chars max).
 
 ## Constraint ID Format
 
@@ -66,14 +75,15 @@ Constraints referenced in specs, decisions, and code comments use these prefixes
 | `I-xxx` | **Interface constraint** — UI/UX or API contract | `I-001` |
 | `B-xxx` | **Build constraint** — tooling, CI, infra requirement | `B-001` |
 
-When adding or referencing a constraint, use the next available number in its prefix series. Constraints live in `decisions/` as ADRs or inline in spec files.
+See `CONSTRAINTS.md` for the full registry with 19 core, 3 interface, and 5 build constraints.
 
 ## Known Pitfalls
 
-- **No build tooling yet.** Running `npm` commands will fail until `package.json` is created.
-- **Branch mismatch.** The repo was initialized on `master` but PRs target `main`. Create and push `main` before opening PRs.
-- **Empty directories.** `decisions/` and `archive/` are empty; Git may not track them without a `.gitkeep` or content.
-- **Trunk.io not configured.** `.trunk/` is git-ignored but no Trunk config exists yet. Install via `trunk init` when ready.
+- **React Router 7 imports:** Use `"react-router"` for most imports and `"react-router/dom"` for `RouterProvider`. Using `"react-router-dom"` will fail.
+- **React 19 useRef:** Requires an initial value — `useRef<T | null>(null)`, not `useRef<T>()`.
+- **Path aliases outside src/:** The `@/` alias only works inside `src/`. Scripts in `scripts/` must use relative imports (`../src/...`).
+- **Recharts bundle size:** Recharts pulls in D3, producing a 717KB chunk. Code-splitting with `React.lazy()` on the Summary route is the optimization path.
+- **Branch structure:** Work happens on feature branches; PRs target `main`.
 
 ## Compaction Rules
 

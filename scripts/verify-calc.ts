@@ -1,0 +1,242 @@
+/**
+ * Calculation Engine Verification Script
+ *
+ * Covers 6 formula paths to catch formula errors early:
+ * 1. Standard wage spot-check (the $879 target)
+ * 2. Prevailing wage loaded rate
+ * 3. Condition adjustments (positive and negative)
+ * 4. Equipment cost with adjusted crew days
+ * 5. Running totals with VE savings + multiplicative O&P
+ * 6. Hardware cost aggregation
+ *
+ * Run: npm run verify
+ */
+
+import { calcSqft, calcPerimeter, calcMaterialCost } from '../src/calc/material-calc'
+import { calcLoadedRate, calcPWLoadedRate, calcCrewDays, calcLaborCost } from '../src/calc/labor-calc'
+import { calcEquipmentCost } from '../src/calc/equipment-calc'
+import { calcFullLineItem } from '../src/calc/line-total-calc'
+import { calcRunningTotals } from '../src/calc/summary-calc'
+import { suggestOPPercents } from '../src/calc/op-suggest'
+import { calcBenchmark } from '../src/calc/benchmark-calc'
+import { calcWinRate } from '../src/calc/win-rate-calc'
+import { DEFAULT_SETTINGS } from '../src/data'
+import type { LineItem, Project } from '../src/types'
+
+let passed = 0
+let failed = 0
+
+function assert(label: string, actual: number, expected: number, tolerance = 0.01) {
+  const diff = Math.abs(actual - expected)
+  if (diff <= tolerance) {
+    console.log(`  PASS: ${label} = ${actual} (expected ${expected})`)
+    passed++
+  } else {
+    console.error(`  FAIL: ${label} = ${actual} (expected ${expected}, diff ${diff})`)
+    failed++
+  }
+}
+
+function assertExact<T>(label: string, actual: T, expected: T) {
+  if (actual === expected) {
+    console.log(`  PASS: ${label} = ${String(actual)}`)
+    passed++
+  } else {
+    console.error(`  FAIL: ${label} = ${String(actual)} (expected ${String(expected)})`)
+    failed++
+  }
+}
+
+// ── Test 1: Standard Wage Spot-Check (48"×96" Clear Tempered + Kawneer) ──
+console.log('\n1. Standard Wage Spot-Check')
+{
+  const sqft = calcSqft(48, 96, 1)
+  assert('sqft', sqft, 32.0)
+
+  const perim = calcPerimeter(48, 96, 1)
+  assert('perimeter', perim, 24.0)
+
+  const matCost = calcMaterialCost(sqft, perim, 15.00, 9.85, [], 1)
+  assert('materialCost', matCost, 716.40)
+
+  const loadedRate = calcLoadedRate(38.50, 0.35, 2.50)
+  assert('loadedRate', loadedRate, 54.475)
+
+  const crewDays = calcCrewDays(3.0, 1, [])
+  assert('crewDays', crewDays, 0.375)
+
+  const laborCost = calcLaborCost(crewDays, loadedRate)
+  assert('laborCost', laborCost, 163.43, 0.01)
+
+  const total = matCost + laborCost
+  assert('lineTotal', total, 879.83, 0.50)
+}
+
+// ── Test 2: Prevailing Wage Path ──
+console.log('\n2. Prevailing Wage Loaded Rate')
+{
+  // PW: pwBase * (1 + burden) + pwFringe
+  const pwRate = calcPWLoadedRate(55.00, 0.35, 15.00)
+  assert('pwLoadedRate', pwRate, 89.25) // 55 * 1.35 + 15
+
+  const laborCost = calcLaborCost(0.375, pwRate)
+  assert('pwLaborCost', laborCost, 267.75) // 0.375 * 8 * 89.25
+}
+
+// ── Test 3: Conditions (positive + negative stacking) ──
+console.log('\n3. Condition Adjustments')
+{
+  // Base: 3.0 hrs/unit × 2 qty / 8 = 0.75 days
+  // + High Wind (0.5) + Pre-fab (-0.5) = net 0
+  const crewDays1 = calcCrewDays(3.0, 2, [0.5, -0.5])
+  assert('crewDays (net zero adj)', crewDays1, 0.75)
+
+  // All positive: 0.75 + 0.5 + 0.75 + 1.0 = 3.0
+  const crewDays2 = calcCrewDays(3.0, 2, [0.5, 0.75, 1.0])
+  assert('crewDays (stacked positive)', crewDays2, 3.0)
+
+  // Heavy negative clamps to 0: 0.375 - 2.0
+  const crewDays3 = calcCrewDays(3.0, 1, [-2.0])
+  assert('crewDays (clamped to 0)', crewDays3, 0)
+}
+
+// ── Test 4: Equipment Cost with Adjusted Crew Days ──
+console.log('\n4. Equipment Cost')
+{
+  const boomLift = DEFAULT_SETTINGS.equipment.find(e => e.id === 'equip-001')!
+  const scissorLift = DEFAULT_SETTINGS.equipment.find(e => e.id === 'equip-003')!
+  const crewDays = 2.0
+
+  // Single equipment: 350 * 2 = 700
+  const cost1 = calcEquipmentCost([boomLift], crewDays)
+  assert('equipCost (single)', cost1, 700.00)
+
+  // Multiple equipment: (350 + 225) * 2 = 1150
+  const cost2 = calcEquipmentCost([boomLift, scissorLift], crewDays)
+  assert('equipCost (multiple)', cost2, 1150.00)
+
+  // Zero crew days = zero cost
+  const cost3 = calcEquipmentCost([boomLift], 0)
+  assert('equipCost (zero days)', cost3, 0)
+}
+
+// ── Test 5: Running Totals with VE + Multiplicative O&P ──
+console.log('\n5. Running Totals + VE + O&P')
+{
+  const mockProject: Project = {
+    id: 'test',
+    name: 'Test',
+    clientName: '',
+    bidDate: '',
+    status: 'Bidding',
+    address: '',
+    projectManager: '',
+    estimator: '',
+    prevailingWage: false,
+    overheadPercent: 10,
+    profitPercent: 10,
+    lineItems: [
+      {
+        id: 'li-1', systemTypeId: 'sys-001', glassTypeId: 'glass-001',
+        frameSystemId: 'frame-001', description: '', quantity: 1,
+        widthInches: 48, heightInches: 96, sqft: 32, perimeter: 24,
+        materialCost: 716.40, laborCost: 163.43, equipmentCost: 0,
+        lineTotal: 879.83, conditionIds: [], crewDays: 0.375,
+        equipmentIds: [], hardwareIds: [],
+      },
+    ],
+    veAlternates: [
+      {
+        id: 've-1', lineItemId: 'li-1', description: 'VE option',
+        originalCost: 879.83, alternateCost: 600.00, savings: 279.83,
+      },
+    ],
+    scopeDescriptions: [],
+    timestamps: { createdAt: '', updatedAt: '' },
+  }
+
+  const totals = calcRunningTotals(mockProject)
+  assert('subtotal', totals.subtotal, 879.83)
+  assert('veSavings', totals.veSavings, 279.83)
+  assert('adjustedSubtotal', totals.adjustedSubtotal, 600.00)
+
+  // Multiplicative: 600 * 1.10 = 660 (after OH)
+  assert('overheadAmount', totals.overheadAmount, 60.00)
+  // Profit on (600 + 60) = 660 * 0.10 = 66
+  assert('profitAmount', totals.profitAmount, 66.00)
+  // Contract = 660 + 66 = 726
+  assert('contractValue', totals.contractValue, 726.00)
+}
+
+// ── Test 6: Hardware Cost + Full Line Item Orchestrator ──
+console.log('\n6. Hardware + calcFullLineItem')
+{
+  const li: LineItem = {
+    id: 'test-li', systemTypeId: 'sys-001', glassTypeId: 'glass-001',
+    frameSystemId: 'frame-001', description: '', quantity: 2,
+    widthInches: 48, heightInches: 96, sqft: 0, perimeter: 0,
+    materialCost: 0, laborCost: 0, equipmentCost: 0,
+    lineTotal: 0, conditionIds: [], crewDays: 0,
+    equipmentIds: [], hardwareIds: ['hw-001', 'hw-003'],
+  }
+
+  const result = calcFullLineItem(li, DEFAULT_SETTINGS, false)
+
+  // sqft = (48*96/144) * 2 = 64
+  assert('sqft (qty 2)', result.sqft, 64.0)
+  // perimeter = 2*(48+96)/12 * 2 = 48
+  assert('perimeter (qty 2)', result.perimeter, 48.0)
+  // glass = 64 * 15 = 960, frame = 48 * 9.85 = 472.80
+  // hardware = (2.50 + 8.00) * 2 = 21.00
+  // material = 960 + 472.80 + 21.00 = 1453.80
+  assert('materialCost (with hw)', result.materialCost, 1453.80)
+  // crewDays = 3.0 * 2 / 8 = 0.75
+  assert('crewDays (qty 2)', result.crewDays, 0.75)
+  // labor = 0.75 * 8 * 54.475 = 326.85
+  assert('laborCost (qty 2)', result.laborCost, 326.85, 0.01)
+}
+
+// ── Test 7: O&P Suggestion Tiers ──
+console.log('\n7. O&P Suggestion Tiers')
+{
+  const t1 = suggestOPPercents(50_000)
+  assertExact('tier1 OH', t1.overhead, 10)
+  assertExact('tier1 profit', t1.profit, 10)
+
+  const t2 = suggestOPPercents(250_000)
+  assertExact('tier2 OH', t2.overhead, 8)
+  assertExact('tier2 profit', t2.profit, 8)
+
+  const t3 = suggestOPPercents(500_000)
+  assertExact('tier3 OH', t3.overhead, 5)
+  assertExact('tier3 profit', t3.profit, 5)
+}
+
+// ── Test 8: Benchmark + Win Rate ──
+console.log('\n8. Benchmark + Win Rate')
+{
+  const sys = DEFAULT_SETTINGS.systemTypes.find(s => s.id === 'sys-001')! // Curtain Wall: 45-75
+  assertExact('benchmark green', calcBenchmark(1000, 32, sys), 'green')   // 31.25 $/SF
+  assertExact('benchmark amber', calcBenchmark(2000, 32, sys), 'amber')   // 62.50 $/SF
+  assertExact('benchmark red', calcBenchmark(3000, 32, sys), 'red')       // 93.75 $/SF
+
+  const winRate = calcWinRate([
+    { status: 'Awarded' } as any,
+    { status: 'Awarded' } as any,
+    { status: 'Lost' } as any,
+    { status: 'Bidding' } as any,
+  ])
+  assert('winRate', winRate!, 0.6667, 0.001)
+
+  assertExact('winRate null', calcWinRate([]), null)
+}
+
+// ── Summary ──
+console.log(`\n${'='.repeat(50)}`)
+console.log(`Results: ${passed} passed, ${failed} failed`)
+if (failed > 0) {
+  console.error('VERIFICATION FAILED')
+  process.exit(1)
+} else {
+  console.log('ALL CHECKS PASSED')
+}
