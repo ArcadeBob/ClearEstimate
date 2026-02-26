@@ -1,0 +1,4 @@
+project:
+  name: ClearEstimate
+  tz: America/New_York
+  adrFolder: docs/adr
