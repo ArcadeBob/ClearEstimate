@@ -1,4 +1,4 @@
-import type { AppState } from '@/types'
+import type { AppState, LineItem } from '@/types'
 import { createDefaultAppState } from '@/data'
 
 const STORAGE_KEY = 'cgi_estimating_app_v1'
@@ -11,21 +11,8 @@ export function loadAppState(): AppState {
 
     const parsed = JSON.parse(raw) as Partial<AppState>
 
-    // Schema migration: merge with defaults to fill any new fields (B-005)
     if (!parsed.schemaVersion || parsed.schemaVersion < CURRENT_SCHEMA_VERSION) {
-      const defaults = createDefaultAppState()
-      const migrated: AppState = {
-        ...defaults,
-        ...parsed,
-        schemaVersion: CURRENT_SCHEMA_VERSION,
-        settings: {
-          ...defaults.settings,
-          ...(parsed.settings ?? {}),
-        },
-        projects: parsed.projects ?? [],
-      }
-      saveAppState(migrated)
-      return migrated
+      return migrateState(parsed)
     }
 
     return parsed as AppState
@@ -33,6 +20,30 @@ export function loadAppState(): AppState {
     // Corrupted JSON — reset to defaults
     return createDefaultAppState()
   }
+}
+
+function migrateState(parsed: Partial<AppState>): AppState {
+  const defaults = createDefaultAppState()
+
+  // v1→v2: Replace all settings with new seed data (B-007).
+  // Settings are incompatible: SystemType gained laborMode, FrameSystem lost laborHoursPerUnit.
+  const projects = (parsed.projects ?? []).map(p => ({
+    ...p,
+    lineItems: (p.lineItems ?? []).map((li: Partial<LineItem>) => ({
+      ...li,
+      manHours: 0,
+      conditionIds: [],
+    })),
+  }))
+
+  const migrated: AppState = {
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+    settings: defaults.settings,  // full replacement, not merge
+    projects: projects as AppState['projects'],
+  }
+
+  saveAppState(migrated)
+  return migrated
 }
 
 export function saveAppState(state: AppState): void {
