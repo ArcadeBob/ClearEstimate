@@ -81,16 +81,15 @@ export function SettingsView() {
 
         {activeTab === 'frames' && (
           <SettingsTable
-            columns={['Name', 'Cost / LF', 'Labor Hrs / Unit']}
+            columns={['Name', 'Cost / LF']}
             rows={settings.frameSystems.map(f => ({
               id: f.id,
               cells: [
                 { value: f.name, onChange: (v: string) => updateItem('frameSystems', f.id, { name: v }) },
                 { value: f.costPerLinFt, onChange: (v: number) => updateItem('frameSystems', f.id, { costPerLinFt: v }), type: 'number' as const, prefix: '$' },
-                { value: f.laborHoursPerUnit, onChange: (v: number) => updateItem('frameSystems', f.id, { laborHoursPerUnit: v }), type: 'number' as const },
               ],
             }))}
-            onAdd={() => addItem('frameSystems', { name: 'New Frame System', costPerLinFt: 0, laborHoursPerUnit: 0 })}
+            onAdd={() => addItem('frameSystems', { name: 'New Frame System', costPerLinFt: 0 })}
             onDelete={(id, name) => setDeleteTarget({ tableName: 'frameSystems', id, name })}
             getUsage={(id) => getUsageCount('frameSystems', id)}
           />

@@ -45,6 +45,7 @@ export function useLineItems(projectId: string) {
       lineTotal: 0,
       conditionIds: [],
       crewDays: 0,
+      manHours: 0,
       equipmentIds: [],
       hardwareIds: [],
     }
