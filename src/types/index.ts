@@ -42,6 +42,7 @@ export interface LineItem {
   lineTotal: number
   conditionIds: string[]
   crewDays: number
+  manHours: number
   equipmentIds: string[]
   hardwareIds: string[]
 }
@@ -72,14 +73,16 @@ export interface FrameSystem {
   id: string
   name: string
   costPerLinFt: number
-  laborHoursPerUnit: number
 }
 
 export interface SystemType {
   id: string
   name: string
-  benchmarkLow: number  // $/SF threshold for green
-  benchmarkHigh: number // $/SF threshold for red (amber in between)
+  benchmarkLow: number
+  benchmarkHigh: number
+  laborMode: 'area' | 'unit'
+  sfPerManHour?: number
+  hoursPerUnit?: number
 }
 
 export interface LaborRate {
