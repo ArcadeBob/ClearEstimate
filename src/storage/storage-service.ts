@@ -2,7 +2,7 @@ import type { AppState } from '@/types'
 import { createDefaultAppState } from '@/data'
 
 const STORAGE_KEY = 'cgi_estimating_app_v1'
-const CURRENT_SCHEMA_VERSION = 1
+const CURRENT_SCHEMA_VERSION = 2
 
 export function loadAppState(): AppState {
   try {

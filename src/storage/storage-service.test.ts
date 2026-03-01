@@ -12,7 +12,7 @@ describe('storage-service', () => {
   describe('loadAppState', () => {
     it('returns default state when localStorage is empty', () => {
       const state = loadAppState()
-      expect(state.schemaVersion).toBe(1)
+      expect(state.schemaVersion).toBe(2)
       expect(state.projects).toEqual([])
       expect(state.settings.glassTypes.length).toBeGreaterThan(0)
     })
@@ -30,7 +30,7 @@ describe('storage-service', () => {
     it('returns default state on corrupted JSON (B-005)', () => {
       localStorage.setItem(STORAGE_KEY, 'not-valid-json{{{')
       const state = loadAppState()
-      expect(state.schemaVersion).toBe(1)
+      expect(state.schemaVersion).toBe(2)
       expect(state.projects).toEqual([])
     })
 
@@ -39,7 +39,7 @@ describe('storage-service', () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(oldState))
 
       const state = loadAppState()
-      expect(state.schemaVersion).toBe(1)
+      expect(state.schemaVersion).toBe(2)
       // Should have default settings merged in
       expect(state.settings.glassTypes.length).toBeGreaterThan(0)
     })
@@ -53,7 +53,7 @@ describe('storage-service', () => {
       const raw = localStorage.getItem(STORAGE_KEY)
       expect(raw).not.toBeNull()
       const parsed = JSON.parse(raw!)
-      expect(parsed.schemaVersion).toBe(1)
+      expect(parsed.schemaVersion).toBe(2)
     })
   })
 
