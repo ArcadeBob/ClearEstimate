@@ -13,20 +13,24 @@ export function calcPWLoadedRate(pwBaseRate: number, burdenPercent: number, pwFr
 }
 
 /**
- * Crew days with condition adjustments (I-003).
- * condition.adjustment is in crew-day units added to total (not per-unit).
- * Result clamped to min 0.
+ * Area-based labor: baseManHours = sqft / sfPerManHour — C-021
+ * Division-by-zero guard: returns 0 if sfPerManHour <= 0 — C-043
  */
-export function calcCrewDays(
-  laborHoursPerUnit: number,
-  quantity: number,
-  conditionAdjustments: number[],
-): number {
-  const baseDays = laborHoursPerUnit * quantity / 8
-  const totalAdjustment = conditionAdjustments.reduce((sum, adj) => sum + adj, 0)
-  return Math.max(0, baseDays + totalAdjustment)
+export function calcBaseManHoursArea(sqft: number, sfPerManHour: number): number {
+  if (sfPerManHour <= 0) return 0
+  return sqft / sfPerManHour
 }
 
-export function calcLaborCost(crewDays: number, loadedRate: number): number {
-  return Math.round(crewDays * 8 * loadedRate * 100) / 100
+/**
+ * Unit-based labor: baseManHours = hoursPerUnit × quantity — C-022
+ */
+export function calcBaseManHoursUnit(hoursPerUnit: number, quantity: number): number {
+  return hoursPerUnit * quantity
+}
+
+/**
+ * Labor cost from man-hours: round2(manHours × loadedRate) — C-026
+ */
+export function calcLaborCost(manHours: number, loadedRate: number): number {
+  return Math.round(manHours * loadedRate * 100) / 100
 }
