@@ -4,11 +4,12 @@ import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { formatCurrency } from '@/calc'
 import type { AppSettings } from '@/types'
 
-type TabName = 'glass' | 'frames' | 'labor' | 'conditions' | 'hardware' | 'equipment'
+type TabName = 'glass' | 'frames' | 'systems' | 'labor' | 'conditions' | 'hardware' | 'equipment'
 
 const TABS: { key: TabName; label: string }[] = [
   { key: 'glass', label: 'Glass' },
   { key: 'frames', label: 'Frame Systems' },
+  { key: 'systems', label: 'System Types' },
   { key: 'labor', label: 'Labor' },
   { key: 'conditions', label: 'Conditions' },
   { key: 'hardware', label: 'Hardware' },
@@ -81,18 +82,27 @@ export function SettingsView() {
 
         {activeTab === 'frames' && (
           <SettingsTable
-            columns={['Name', 'Cost / LF', 'Labor Hrs / Unit']}
+            columns={['Name', 'Cost / LF']}
             rows={settings.frameSystems.map(f => ({
               id: f.id,
               cells: [
                 { value: f.name, onChange: (v: string) => updateItem('frameSystems', f.id, { name: v }) },
                 { value: f.costPerLinFt, onChange: (v: number) => updateItem('frameSystems', f.id, { costPerLinFt: v }), type: 'number' as const, prefix: '$' },
-                { value: f.laborHoursPerUnit, onChange: (v: number) => updateItem('frameSystems', f.id, { laborHoursPerUnit: v }), type: 'number' as const },
               ],
             }))}
-            onAdd={() => addItem('frameSystems', { name: 'New Frame System', costPerLinFt: 0, laborHoursPerUnit: 0 })}
+            onAdd={() => addItem('frameSystems', { name: 'New Frame System', costPerLinFt: 0 })}
             onDelete={(id, name) => setDeleteTarget({ tableName: 'frameSystems', id, name })}
             getUsage={(id) => getUsageCount('frameSystems', id)}
+          />
+        )}
+
+        {activeTab === 'systems' && (
+          <SystemTypesTable
+            systemTypes={settings.systemTypes}
+            onUpdate={(id, updates) => updateItem('systemTypes', id, updates)}
+            onAdd={() => addItem('systemTypes', { name: 'New System Type', benchmarkLow: 0, benchmarkHigh: 0, laborMode: 'area' as const, sfPerManHour: 10 })}
+            onDelete={(id, name) => setDeleteTarget({ tableName: 'systemTypes', id, name })}
+            getUsage={(id) => getUsageCount('systemTypes', id)}
           />
         )}
 
@@ -318,6 +328,101 @@ function LaborTable({ laborRates, onUpdate, onAdd, onDelete }: LaborTableProps) 
                 <button
                   onClick={() => onDelete(lr.id, lr.role)}
                   className="text-xs text-red-600 hover:text-red-800"
+                >
+                  Delete
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <button
+        onClick={onAdd}
+        className="mt-3 rounded-lg border border-dashed border-gray-300 px-4 py-2 text-sm text-gray-600 hover:border-gray-400 hover:text-gray-700"
+      >
+        + Add Row
+      </button>
+    </div>
+  )
+}
+
+// ── System Types Table (conditional labor fields) ────────────────
+
+interface SystemTypesTableProps {
+  systemTypes: { id: string; name: string; benchmarkLow: number; benchmarkHigh: number; laborMode: 'area' | 'unit'; sfPerManHour?: number; hoursPerUnit?: number }[]
+  onUpdate: (id: string, updates: Record<string, unknown>) => void
+  onAdd: () => void
+  onDelete: (id: string, name: string) => void
+  getUsage: (id: string) => number
+}
+
+function SystemTypesTable({ systemTypes, onUpdate, onAdd, onDelete, getUsage }: SystemTypesTableProps) {
+  return (
+    <div>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-gray-200">
+            <th className="px-3 py-2 text-left font-medium text-gray-700">Name</th>
+            <th className="px-3 py-2 text-left font-medium text-gray-700">Labor Mode</th>
+            <th className="px-3 py-2 text-left font-medium text-gray-700">Productivity</th>
+            <th className="w-20 px-3 py-2" />
+          </tr>
+        </thead>
+        <tbody>
+          {systemTypes.map(st => (
+            <tr key={st.id} className="border-b border-gray-100 hover:bg-gray-50">
+              <td className="px-3 py-1.5">
+                <input
+                  type="text"
+                  value={st.name}
+                  onChange={e => onUpdate(st.id, { name: e.target.value })}
+                  className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
+                />
+              </td>
+              <td className="px-3 py-1.5">
+                <select
+                  value={st.laborMode}
+                  onChange={e => {
+                    const mode = e.target.value as 'area' | 'unit'
+                    onUpdate(st.id, {
+                      laborMode: mode,
+                      sfPerManHour: mode === 'area' ? (st.sfPerManHour ?? 10) : undefined,
+                      hoursPerUnit: mode === 'unit' ? (st.hoursPerUnit ?? 4) : undefined,
+                    })
+                  }}
+                  className="rounded border border-gray-200 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="area">Area (SF/MH)</option>
+                  <option value="unit">Unit (Hrs/Unit)</option>
+                </select>
+              </td>
+              <td className="px-3 py-1.5">
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0.1"
+                    value={st.laborMode === 'area' ? (st.sfPerManHour ?? 0) : (st.hoursPerUnit ?? 0)}
+                    onChange={e => {
+                      const val = parseFloat(e.target.value) || 0
+                      if (st.laborMode === 'area') {
+                        onUpdate(st.id, { sfPerManHour: val })
+                      } else {
+                        onUpdate(st.id, { hoursPerUnit: val })
+                      }
+                    }}
+                    className="w-24 rounded border border-gray-200 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
+                  />
+                  <span className="text-xs text-gray-400">
+                    {st.laborMode === 'area' ? 'SF/MH' : 'hrs/unit'}
+                  </span>
+                </div>
+              </td>
+              <td className="px-3 py-1.5 text-right">
+                <button
+                  onClick={() => onDelete(st.id, st.name)}
+                  className="text-xs text-red-600 hover:text-red-800"
+                  title={`Used by ${getUsage(st.id)} line items`}
                 >
                   Delete
                 </button>

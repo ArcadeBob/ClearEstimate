@@ -1,5 +1,5 @@
 export { calcSqft, calcPerimeter, calcMaterialCost } from './material-calc'
-export { calcLoadedRate, calcPWLoadedRate, calcCrewDays, calcLaborCost } from './labor-calc'
+export { calcLoadedRate, calcPWLoadedRate, calcBaseManHoursArea, calcBaseManHoursUnit, calcLaborCost } from './labor-calc'
 export { calcEquipmentCost, shouldSuggestEquipment } from './equipment-calc'
 export { calcFullLineItem } from './line-total-calc'
 export { suggestOPPercents } from './op-suggest'

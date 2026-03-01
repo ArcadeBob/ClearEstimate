@@ -14,7 +14,7 @@ function lineItem(overrides: Partial<LineItem> = {}): LineItem {
     frameSystemId: 'frame-001', description: '', quantity: 1,
     widthInches: 48, heightInches: 96, sqft: 32, perimeter: 24,
     materialCost: 716.40, laborCost: 163.43, equipmentCost: 0,
-    lineTotal: 879.83, conditionIds: [], crewDays: 0.375,
+    lineTotal: 879.83, conditionIds: [], crewDays: 0.375, manHours: 0,
     equipmentIds: [], hardwareIds: [],
     ...overrides,
   }

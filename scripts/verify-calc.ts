@@ -2,10 +2,10 @@
  * Calculation Engine Verification Script
  *
  * Covers 6 formula paths to catch formula errors early:
- * 1. Standard wage spot-check (the $879 target)
+ * 1. Standard wage spot-check (area mode, $1007 target)
  * 2. Prevailing wage loaded rate
- * 3. Condition adjustments (positive and negative)
- * 4. Equipment cost with adjusted crew days
+ * 3. Dual labor mode (area + unit + div-by-zero guard)
+ * 4. Equipment cost with crew days
  * 5. Running totals with VE savings + multiplicative O&P
  * 6. Hardware cost aggregation
  *
@@ -13,7 +13,7 @@
  */
 
 import { calcSqft, calcPerimeter, calcMaterialCost } from '../src/calc/material-calc'
-import { calcLoadedRate, calcPWLoadedRate, calcCrewDays, calcLaborCost } from '../src/calc/labor-calc'
+import { calcLoadedRate, calcPWLoadedRate, calcBaseManHoursArea, calcBaseManHoursUnit, calcLaborCost } from '../src/calc/labor-calc'
 import { calcEquipmentCost } from '../src/calc/equipment-calc'
 import { calcFullLineItem } from '../src/calc/line-total-calc'
 import { calcRunningTotals } from '../src/calc/summary-calc'
@@ -62,14 +62,14 @@ console.log('\n1. Standard Wage Spot-Check')
   const loadedRate = calcLoadedRate(38.50, 0.35, 2.50)
   assert('loadedRate', loadedRate, 54.475)
 
-  const crewDays = calcCrewDays(3.0, 1, [])
-  assert('crewDays', crewDays, 0.375)
+  const manHours = calcBaseManHoursArea(32, 6.0) // Curtain Wall: 32 SF / 6.0 SF/MH
+  assert('manHours', manHours, 5.3333, 0.001)
 
-  const laborCost = calcLaborCost(crewDays, loadedRate)
-  assert('laborCost', laborCost, 163.43, 0.01)
+  const laborCost = calcLaborCost(manHours, loadedRate)
+  assert('laborCost', laborCost, 290.53, 0.01)
 
   const total = matCost + laborCost
-  assert('lineTotal', total, 879.83, 0.50)
+  assert('lineTotal', total, 1006.93, 0.50)
 }
 
 // ── Test 2: Prevailing Wage Path ──
@@ -79,25 +79,24 @@ console.log('\n2. Prevailing Wage Loaded Rate')
   const pwRate = calcPWLoadedRate(55.00, 0.35, 15.00)
   assert('pwLoadedRate', pwRate, 89.25) // 55 * 1.35 + 15
 
-  const laborCost = calcLaborCost(0.375, pwRate)
-  assert('pwLaborCost', laborCost, 267.75) // 0.375 * 8 * 89.25
+  const laborCost = calcLaborCost(5.3333, pwRate) // same manHours, PW rate
+  assert('pwLaborCost', laborCost, 476.00, 0.50)
 }
 
-// ── Test 3: Conditions (positive + negative stacking) ──
-console.log('\n3. Condition Adjustments')
+// ── Test 3: Dual Labor Mode ──
+console.log('\n3. Dual Labor Mode')
 {
-  // Base: 3.0 hrs/unit × 2 qty / 8 = 0.75 days
-  // + High Wind (0.5) + Pre-fab (-0.5) = net 0
-  const crewDays1 = calcCrewDays(3.0, 2, [0.5, -0.5])
-  assert('crewDays (net zero adj)', crewDays1, 0.75)
+  // Area mode: 64 SF / 6.0 SF/MH = 10.6667 MH
+  const areaHours = calcBaseManHoursArea(64, 6.0)
+  assert('area manHours', areaHours, 10.6667, 0.001)
 
-  // All positive: 0.75 + 0.5 + 0.75 + 1.0 = 3.0
-  const crewDays2 = calcCrewDays(3.0, 2, [0.5, 0.75, 1.0])
-  assert('crewDays (stacked positive)', crewDays2, 3.0)
+  // Unit mode: 8.0 hrs/unit × 3 qty = 24 MH
+  const unitHours = calcBaseManHoursUnit(8.0, 3)
+  assert('unit manHours', unitHours, 24.0)
 
-  // Heavy negative clamps to 0: 0.375 - 2.0
-  const crewDays3 = calcCrewDays(3.0, 1, [-2.0])
-  assert('crewDays (clamped to 0)', crewDays3, 0)
+  // Division-by-zero guard (C-043)
+  const zeroGuard = calcBaseManHoursArea(32, 0)
+  assert('div-by-zero guard', zeroGuard, 0)
 }
 
 // ── Test 4: Equipment Cost with Adjusted Crew Days ──
@@ -140,15 +139,15 @@ console.log('\n5. Running Totals + VE + O&P')
         id: 'li-1', systemTypeId: 'sys-001', glassTypeId: 'glass-001',
         frameSystemId: 'frame-001', description: '', quantity: 1,
         widthInches: 48, heightInches: 96, sqft: 32, perimeter: 24,
-        materialCost: 716.40, laborCost: 163.43, equipmentCost: 0,
-        lineTotal: 879.83, conditionIds: [], crewDays: 0.375,
-        equipmentIds: [], hardwareIds: [],
+        materialCost: 716.40, laborCost: 290.53, equipmentCost: 0,
+        lineTotal: 1006.93, conditionIds: [], crewDays: 0.6667,
+        manHours: 5.3333, equipmentIds: [], hardwareIds: [],
       },
     ],
     veAlternates: [
       {
         id: 've-1', lineItemId: 'li-1', description: 'VE option',
-        originalCost: 879.83, alternateCost: 600.00, savings: 279.83,
+        originalCost: 1006.93, alternateCost: 600.00, savings: 406.93,
       },
     ],
     scopeDescriptions: [],
@@ -156,8 +155,8 @@ console.log('\n5. Running Totals + VE + O&P')
   }
 
   const totals = calcRunningTotals(mockProject)
-  assert('subtotal', totals.subtotal, 879.83)
-  assert('veSavings', totals.veSavings, 279.83)
+  assert('subtotal', totals.subtotal, 1006.93)
+  assert('veSavings', totals.veSavings, 406.93)
   assert('adjustedSubtotal', totals.adjustedSubtotal, 600.00)
 
   // Multiplicative: 600 * 1.10 = 660 (after OH)
@@ -177,7 +176,7 @@ console.log('\n6. Hardware + calcFullLineItem')
     widthInches: 48, heightInches: 96, sqft: 0, perimeter: 0,
     materialCost: 0, laborCost: 0, equipmentCost: 0,
     lineTotal: 0, conditionIds: [], crewDays: 0,
-    equipmentIds: [], hardwareIds: ['hw-001', 'hw-003'],
+    manHours: 0, equipmentIds: [], hardwareIds: ['hw-001', 'hw-003'],
   }
 
   const result = calcFullLineItem(li, DEFAULT_SETTINGS, false)
@@ -190,10 +189,10 @@ console.log('\n6. Hardware + calcFullLineItem')
   // hardware = (2.50 + 8.00) * 2 = 21.00
   // material = 960 + 472.80 + 21.00 = 1453.80
   assert('materialCost (with hw)', result.materialCost, 1453.80)
-  // crewDays = 3.0 * 2 / 8 = 0.75
-  assert('crewDays (qty 2)', result.crewDays, 0.75)
-  // labor = 0.75 * 8 * 54.475 = 326.85
-  assert('laborCost (qty 2)', result.laborCost, 326.85, 0.01)
+  // manHours = 64 / 6.0 = 10.6667, crewDays = 10.6667 / 8 = 1.3333
+  assert('crewDays (qty 2)', result.crewDays, 1.3333, 0.001)
+  // labor = 10.6667 * 54.475 = 581.07
+  assert('laborCost (qty 2)', result.laborCost, 581.07, 0.50)
 }
 
 // ── Test 7: O&P Suggestion Tiers ──

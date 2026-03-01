@@ -12,7 +12,7 @@ describe('storage-service', () => {
   describe('loadAppState', () => {
     it('returns default state when localStorage is empty', () => {
       const state = loadAppState()
-      expect(state.schemaVersion).toBe(1)
+      expect(state.schemaVersion).toBe(2)
       expect(state.projects).toEqual([])
       expect(state.settings.glassTypes.length).toBeGreaterThan(0)
     })
@@ -30,18 +30,46 @@ describe('storage-service', () => {
     it('returns default state on corrupted JSON (B-005)', () => {
       localStorage.setItem(STORAGE_KEY, 'not-valid-json{{{')
       const state = loadAppState()
-      expect(state.schemaVersion).toBe(1)
+      expect(state.schemaVersion).toBe(2)
       expect(state.projects).toEqual([])
     })
 
-    it('migrates old schema version to current', () => {
-      const oldState = { schemaVersion: 0, projects: [], settings: {} }
+    it('migrates old schema version to current with full settings replacement (B-007)', () => {
+      const defaults = createDefaultAppState()
+      const oldState = {
+        schemaVersion: 1,
+        projects: [
+          {
+            id: 'p1',
+            name: 'Legacy Project',
+            lineItems: [
+              { id: 'li1', description: 'Old line item', quantity: 5 },
+            ],
+          },
+        ],
+        settings: { glassTypes: [{ id: 'stale', name: 'Stale Glass' }] },
+      }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(oldState))
 
       const state = loadAppState()
-      expect(state.schemaVersion).toBe(1)
-      // Should have default settings merged in
-      expect(state.settings.glassTypes.length).toBeGreaterThan(0)
+
+      // Schema version bumped
+      expect(state.schemaVersion).toBe(2)
+
+      // Settings fully replaced with defaults — not merged
+      expect(state.settings).toEqual(defaults.settings)
+
+      // Projects preserved
+      expect(state.projects.length).toBe(1)
+      expect(state.projects[0]!.name).toBe('Legacy Project')
+
+      // Line items gain new fields
+      const li = state.projects[0]!.lineItems[0]!
+      expect(li.manHours).toBe(0)
+      expect(li.conditionIds).toEqual([])
+      // Original fields preserved
+      expect(li.description).toBe('Old line item')
+      expect(li.quantity).toBe(5)
     })
   })
 
@@ -53,7 +81,7 @@ describe('storage-service', () => {
       const raw = localStorage.getItem(STORAGE_KEY)
       expect(raw).not.toBeNull()
       const parsed = JSON.parse(raw!)
-      expect(parsed.schemaVersion).toBe(1)
+      expect(parsed.schemaVersion).toBe(2)
     })
   })
 

@@ -498,6 +498,10 @@ const LineItemRow = memo(function LineItemRow({
                   <span>{formatCurrency(item.lineTotal)}</span>
                 </div>
                 <div className="flex justify-between text-gray-400">
+                  <span>Man-Hours</span>
+                  <span>{item.manHours.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-gray-400">
                   <span>Crew Days</span>
                   <span>{item.crewDays.toFixed(2)}</span>
                 </div>

@@ -8,6 +8,8 @@ describe('calcBenchmark', () => {
     name: 'Curtain Wall',
     benchmarkLow: 45,
     benchmarkHigh: 75,
+    laborMode: 'area' as const,
+    sfPerManHour: 10,
   }
 
   it('returns green when $/SF <= benchmarkLow', () => {
