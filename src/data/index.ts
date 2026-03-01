@@ -19,28 +19,26 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
 export function createDefaultAppState(): AppState {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     projects: [],
     settings: DEFAULT_SETTINGS,
   }
 }
 
 /**
- * SPOT-CHECK VERIFICATION (48"×96" qty 1, Clear Tempered + Kawneer, no conditions/equipment):
+ * SPOT-CHECK VERIFICATION (48"×96" qty 1, Clear Tempered + Kawneer, Curtain Wall system):
  *
  * sqft       = (48 × 96) / 144 × 1     = 32.00 SF
  * perimeter  = 2 × (48 + 96) / 12 × 1  = 24.00 LF
  *
  * Glass cost = 32.00 × $15.00           = $480.00
  * Frame cost = 24.00 × $9.85            = $236.40
- * Hardware   = $0                        (none selected)
  * Material   = $480.00 + $236.40         = $716.40
  *
  * Loaded rate = $38.50 × 1.35 + $2.50   = $54.475/hr
- * Crew days   = 3.0 hrs × 1 / 8         = 0.375
- * Labor cost  = 0.375 × 8 × $54.475     = $163.43
+ * Man-hours   = 32.00 SF / 6.0 SF/MH    = 5.3333 MH  (area mode, Curtain Wall)
+ * Labor cost  = 5.3333 × $54.475        = $290.53
+ * Crew days   = 5.3333 / 8              = 0.6667
  *
- * Equipment   = $0                       (none selected)
- *
- * LINE TOTAL  = $716.40 + $163.43        = $879.83  ← target ~$879 ✓
+ * LINE TOTAL  = $716.40 + $290.53        = $1,006.93
  */
