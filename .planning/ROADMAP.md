@@ -43,10 +43,10 @@ Plans:
   2. calcFullLineItem() returns a lineTotal that equals materialCost + laborCost + equipmentCost for door line items with hardware selected (C-033 preserved)
   3. Smart hinge count suggestion returns 2 for doors up to 60", 3 for 61-90", and 4 for 91-120" based on door height
   4. verify-calc.ts passes with new door hardware assertions alongside all existing 37 assertions
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 02-01: TBD
+- [ ] 02-01: Door Hardware Cost Calc, Hinge Suggestion, and Orchestrator Integration
 
 ### Phase 3: State & Behavior
 **Goal**: Estimators get correct default hardware when selecting a door type, and can customize selections through hook-driven CRUD operations
