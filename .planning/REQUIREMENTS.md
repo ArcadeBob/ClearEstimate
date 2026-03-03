@@ -16,9 +16,9 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Calculation
 
-- [ ] **CALC-01**: Door hardware cost = SUM(unitCost x qtyPerDoor x lineItem.quantity), rolled into materialCost
+- [x] **CALC-01**: Door hardware cost = SUM(unitCost x qtyPerDoor x lineItem.quantity), rolled into materialCost
 - [x] **CALC-02**: `isDoorSystemType()` utility correctly identifies door system types (sys-007, sys-008, sys-009)
-- [ ] **CALC-03**: Smart hinge count suggestion based on door height (2 for <=60", 3 for 61-90", 4 for 91-120")
+- [x] **CALC-03**: Smart hinge count suggestion based on door height (2 for <=60", 3 for 61-90", 4 for 91-120")
 
 ### User Interface
 
@@ -60,9 +60,9 @@ Deferred to future release. Tracked but not in current roadmap.
 | DATA-02 | Phase 1 | Complete |
 | DATA-03 | Phase 1 | Complete |
 | DATA-04 | Phase 1 | Complete |
-| CALC-01 | Phase 2 | Pending |
+| CALC-01 | Phase 2 | Complete |
 | CALC-02 | Phase 1 | Complete |
-| CALC-03 | Phase 2 | Pending |
+| CALC-03 | Phase 2 | Complete |
 | UI-01 | Phase 3 | Pending |
 | UI-02 | Phase 3 | Pending |
 | UI-03 | Phase 4 | Pending |
