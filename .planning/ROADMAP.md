@@ -13,7 +13,8 @@ This milestone adds door-specific hardware selection to the Takeoff view. The bu
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Data Model & Migration** - Types, seed data, default hardware sets, schema migration, and door type utility
-- [ ] **Phase 2: Calculation Engine** - Pure calc function for door hardware cost and smart hinge suggestion
+- [x] **Phase 2: Calculation Engine** - Pure calc function for door hardware cost and smart hinge suggestion
+- [ ] **Phase 5: Integration Fixes** - Barrel export, migration fix, roadmap cleanup (gap closure)
 - [ ] **Phase 3: State & Behavior** - Hook logic for auto-populating defaults and add/remove CRUD operations
 - [ ] **Phase 4: UI Components** - Sub-row display, detail panel breakdown, and reset-to-defaults button
 
@@ -46,7 +47,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 02-01: Door Hardware Cost Calc, Hinge Suggestion, and Orchestrator Integration
+- [x] 02-01: Door Hardware Cost Calc, Hinge Suggestion, and Orchestrator Integration
 
 ### Phase 3: State & Behavior
 **Goal**: Estimators get correct default hardware when selecting a door type, and can customize selections through hook-driven CRUD operations
@@ -76,14 +77,28 @@ Plans:
 - [ ] 04-01: TBD
 - [ ] 04-02: TBD
 
+### Phase 5: Integration Fixes
+**Goal:** Close integration gaps identified by milestone audit so that Phases 3 and 4 can proceed without blockers
+**Depends on:** Phase 2
+**Requirements:** DATA-04 (completeness fix)
+**Gap Closure:** Closes integration gaps from v1.0 audit
+**Success Criteria** (what must be TRUE):
+  1. `DOOR_HARDWARE_DEFAULTS` is importable from `@/data` barrel export
+  2. v2->v3 migration initializes `doorHardwareCost: 0` on migrated line items alongside existing `doorHardware: []`
+  3. ROADMAP.md progress table accurately reflects completed phases
+
+Plans:
+- [ ] 05-01: TBD
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4
+Phases execute in dependency order: 1 → 2 → 5 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data Model & Migration | 2/2 | Complete | 2026-03-02 |
-| 2. Calculation Engine | 0/1 | Not started | - |
+| 2. Calculation Engine | 1/1 | Complete | 2026-03-02 |
+| 5. Integration Fixes | 0/1 | Not started | - |
 | 3. State & Behavior | 0/1 | Not started | - |
 | 4. UI Components | 0/2 | Not started | - |
