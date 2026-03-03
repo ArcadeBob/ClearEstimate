@@ -12,7 +12,7 @@ This milestone adds door-specific hardware selection to the Takeoff view. The bu
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Data Model & Migration** - Types, seed data, default hardware sets, schema migration, and door type utility
+- [x] **Phase 1: Data Model & Migration** - Types, seed data, default hardware sets, schema migration, and door type utility
 - [ ] **Phase 2: Calculation Engine** - Pure calc function for door hardware cost and smart hinge suggestion
 - [ ] **Phase 3: State & Behavior** - Hook logic for auto-populating defaults and add/remove CRUD operations
 - [ ] **Phase 4: UI Components** - Sub-row display, detail panel breakdown, and reset-to-defaults button
@@ -32,7 +32,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 - [x] 01-01: Types, Seed Data, and Door System Utility
-- [ ] 01-02: Schema Migration, Data Wiring, and Existing Code Fixes
+- [x] 01-02: Schema Migration, Data Wiring, and Existing Code Fixes
 
 ### Phase 2: Calculation Engine
 **Goal**: Door hardware cost is computed correctly and flows into materialCost, preserving the C-033 invariant (lineTotal = materialCost + laborCost + equipmentCost)
@@ -83,7 +83,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data Model & Migration | 0/2 | Not started | - |
+| 1. Data Model & Migration | 2/2 | Complete | 2026-03-02 |
 | 2. Calculation Engine | 0/1 | Not started | - |
 | 3. State & Behavior | 0/1 | Not started | - |
 | 4. UI Components | 0/2 | Not started | - |

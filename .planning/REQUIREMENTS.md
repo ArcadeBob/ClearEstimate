@@ -12,7 +12,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [x] **DATA-01**: App includes 12 door hardware seed items (hinges, closer, handle/pull, lock/cylinder, panic device, pivots, threshold, weatherstrip, sweep, auto-operator, card reader, exit device) with per-unit pricing
 - [x] **DATA-02**: Each door hardware selection stores per-item quantity (e.g., hinges=3, closer=1) separate from line item quantity
 - [x] **DATA-03**: Each door system type (Swing, Sliding, Revolving) has a default hardware set that auto-populates on selection
-- [ ] **DATA-04**: Schema migration (v2->v3) adds door hardware fields to LineItem and settings while preserving all existing user data
+- [x] **DATA-04**: Schema migration (v2->v3) adds door hardware fields to LineItem and settings while preserving all existing user data
 
 ### Calculation
 
@@ -59,7 +59,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | DATA-01 | Phase 1 | Complete |
 | DATA-02 | Phase 1 | Complete |
 | DATA-03 | Phase 1 | Complete |
-| DATA-04 | Phase 1 | Pending |
+| DATA-04 | Phase 1 | Complete |
 | CALC-01 | Phase 2 | Pending |
 | CALC-02 | Phase 1 | Complete |
 | CALC-03 | Phase 2 | Pending |
