@@ -12,13 +12,13 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [ ] **DATA-01**: App includes 12 door hardware seed items (hinges, closer, handle/pull, lock/cylinder, panic device, pivots, threshold, weatherstrip, sweep, auto-operator, card reader, exit device) with per-unit pricing
 - [ ] **DATA-02**: Each door hardware selection stores per-item quantity (e.g., hinges=3, closer=1) separate from line item quantity
 - [ ] **DATA-03**: Each door system type (Swing, Sliding, Revolving) has a default hardware set that auto-populates on selection
-- [ ] **DATA-04**: Schema migration (v2→v3) adds door hardware fields to LineItem and settings while preserving all existing user data
+- [ ] **DATA-04**: Schema migration (v2->v3) adds door hardware fields to LineItem and settings while preserving all existing user data
 
 ### Calculation
 
-- [ ] **CALC-01**: Door hardware cost = SUM(unitCost × qtyPerDoor × lineItem.quantity), rolled into materialCost
+- [ ] **CALC-01**: Door hardware cost = SUM(unitCost x qtyPerDoor x lineItem.quantity), rolled into materialCost
 - [ ] **CALC-02**: `isDoorSystemType()` utility correctly identifies door system types (sys-007, sys-008, sys-009)
-- [ ] **CALC-03**: Smart hinge count suggestion based on door height (2 for ≤60", 3 for 61-90", 4 for 91-120")
+- [ ] **CALC-03**: Smart hinge count suggestion based on door height (2 for <=60", 3 for 61-90", 4 for 91-120")
 
 ### User Interface
 
@@ -35,7 +35,7 @@ Deferred to future release. Tracked but not in current roadmap.
 ### Enhancements
 
 - **ENH-01**: Custom one-off hardware items (name + cost + qty) for unusual spec requirements
-- **ENH-02**: Hardware set templates — save custom hardware sets and apply to future doors
+- **ENH-02**: Hardware set templates -- save custom hardware sets and apply to future doors
 - **ENH-03**: Duplicate door line item copies hardware selections (deep copy)
 - **ENH-04**: Door hardware cost summary line in project running totals
 - **ENH-05**: Bulk hardware override across multiple door line items
@@ -46,7 +46,7 @@ Deferred to future release. Tracked but not in current roadmap.
 |---------|--------|
 | Manufacturer catalog integration | Requires backend infrastructure; ClearEstimate is a localStorage SPA |
 | Hardware specification sheets/submittals | Document management is a different product concern |
-| Hardware supplier/vendor tracking | Procurement, not estimation — different workflow |
+| Hardware supplier/vendor tracking | Procurement, not estimation -- different workflow |
 | Fire rating/code compliance validation | Architect's responsibility; requires building code database |
 | Door handing (left/right swing) | Affects installation, not estimation cost |
 | Automatic pricing updates from web | Requires web scraping/API infrastructure |
@@ -56,24 +56,24 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | — | Pending |
-| DATA-02 | — | Pending |
-| DATA-03 | — | Pending |
-| DATA-04 | — | Pending |
-| CALC-01 | — | Pending |
-| CALC-02 | — | Pending |
-| CALC-03 | — | Pending |
-| UI-01 | — | Pending |
-| UI-02 | — | Pending |
-| UI-03 | — | Pending |
-| UI-04 | — | Pending |
-| UI-05 | — | Pending |
+| DATA-01 | Phase 1 | Pending |
+| DATA-02 | Phase 1 | Pending |
+| DATA-03 | Phase 1 | Pending |
+| DATA-04 | Phase 1 | Pending |
+| CALC-01 | Phase 2 | Pending |
+| CALC-02 | Phase 1 | Pending |
+| CALC-03 | Phase 2 | Pending |
+| UI-01 | Phase 3 | Pending |
+| UI-02 | Phase 3 | Pending |
+| UI-03 | Phase 4 | Pending |
+| UI-04 | Phase 4 | Pending |
+| UI-05 | Phase 4 | Pending |
 
 **Coverage:**
 - v1 requirements: 12 total
-- Mapped to phases: 0
-- Unmapped: 12 ⚠️
+- Mapped to phases: 12
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-02*
-*Last updated: 2026-03-02 after initial definition*
+*Last updated: 2026-03-02 after roadmap creation*
