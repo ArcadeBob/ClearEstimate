@@ -11,6 +11,7 @@ export {
   calcPieData,
   generateScopeDescription,
 } from './summary-calc'
+export { isDoorSystemType, DOOR_SYSTEM_IDS } from './door-system-util'
 
 /**
  * Shared currency formatter: $1,234.56 — C-017
