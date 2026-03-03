@@ -39,6 +39,7 @@ export interface LineItem {
   materialCost: number
   laborCost: number
   equipmentCost: number
+  doorHardwareCost: number  // Derived: door hardware cost included in materialCost
   lineTotal: number
   conditionIds: string[]
   crewDays: number
