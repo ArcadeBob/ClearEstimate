@@ -42,6 +42,9 @@ export function useSettings() {
             case 'hardware':
               if (li.hardwareIds.includes(itemId)) count++
               break
+            case 'doorHardware':
+              if (li.doorHardware.some(entry => entry.hardwareId === itemId)) count++
+              break
             case 'equipment':
               if (li.equipmentIds.includes(itemId)) count++
               break
