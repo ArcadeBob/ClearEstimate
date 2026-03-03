@@ -26,14 +26,13 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Success Criteria** (what must be TRUE):
   1. App loads with 12 door hardware items available in seed data, each with a name and per-unit price
   2. A LineItem can hold a doorHardware array where each entry tracks both which hardware item and a per-item quantity (e.g., hinges=3)
-  3. Each door system type (Swing, Sliding, Revolving) has a distinct default hardware set defined in data
+  3. Each door system type (Swing, Sliding, Revolving, Entrance) has a distinct default hardware set defined in data
   4. Existing user data saved under schema v2 migrates to v3 without loss -- existing line items gain an empty doorHardware array, existing settings are preserved intact
-  5. isDoorSystemType() correctly returns true for sys-007, sys-008, sys-009 and false for all other system types
-**Plans**: TBD
+  5. isDoorSystemType() correctly returns true for sys-006, sys-007, sys-008, sys-009 and false for all other system types
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
+- [x] 01-01: Types, Seed Data, and Door System Utility
+- [ ] 01-02: Schema Migration, Data Wiring, and Existing Code Fixes
 
 ### Phase 2: Calculation Engine
 **Goal**: Door hardware cost is computed correctly and flows into materialCost, preserving the C-033 invariant (lineTotal = materialCost + laborCost + equipmentCost)
