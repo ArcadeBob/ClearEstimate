@@ -82,18 +82,19 @@ Plans:
 **Depends on:** Phase 2
 **Requirements:** DATA-04 (completeness fix)
 **Gap Closure:** Closes integration gaps from v1.0 audit
+**Plans:** 1 plan
 **Success Criteria** (what must be TRUE):
   1. `DOOR_HARDWARE_DEFAULTS` is importable from `@/data` barrel export
   2. v2->v3 migration initializes `doorHardwareCost: 0` on migrated line items alongside existing `doorHardware: []`
   3. ROADMAP.md progress table accurately reflects completed phases
 
 Plans:
-- [ ] 05-01: TBD
+- [ ] 05-01-PLAN.md -- Barrel export, migration fix, and test assertions
 
 ## Progress
 
 **Execution Order:**
-Phases execute in dependency order: 1 → 2 → 5 → 3 → 4
+Phases execute in dependency order: 1 -> 2 -> 5 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
