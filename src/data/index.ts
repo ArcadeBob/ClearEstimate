@@ -4,6 +4,7 @@ import { SEED_FRAME_SYSTEMS } from './seed-frames'
 import { SEED_LABOR_RATES } from './seed-labor'
 import { SEED_CONDITIONS } from './seed-conditions'
 import { SEED_HARDWARE } from './seed-hardware'
+import { SEED_DOOR_HARDWARE } from './seed-door-hardware'
 import { SEED_EQUIPMENT } from './seed-equipment'
 import { SEED_SYSTEM_TYPES } from './seed-systems'
 
@@ -13,13 +14,14 @@ export const DEFAULT_SETTINGS: AppSettings = {
   laborRates: SEED_LABOR_RATES,
   conditions: SEED_CONDITIONS,
   hardware: SEED_HARDWARE,
+  doorHardware: SEED_DOOR_HARDWARE,
   equipment: SEED_EQUIPMENT,
   systemTypes: SEED_SYSTEM_TYPES,
 }
 
 export function createDefaultAppState(): AppState {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     projects: [],
     settings: DEFAULT_SETTINGS,
   }
