@@ -48,6 +48,7 @@ export function useLineItems(projectId: string) {
       manHours: 0,
       equipmentIds: [],
       hardwareIds: [],
+      doorHardware: [],
     }
     setState(prev => ({
       ...prev,

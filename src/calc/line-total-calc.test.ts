@@ -9,7 +9,7 @@ function baseLineItem(overrides: Partial<LineItem> = {}): LineItem {
     widthInches: 48, heightInches: 96, sqft: 0, perimeter: 0,
     materialCost: 0, laborCost: 0, equipmentCost: 0,
     lineTotal: 0, conditionIds: [], crewDays: 0, manHours: 0,
-    equipmentIds: [], hardwareIds: [],
+    equipmentIds: [], hardwareIds: [], doorHardware: [],
     ...overrides,
   }
 }

@@ -142,6 +142,7 @@ console.log('\n5. Running Totals + VE + O&P')
         materialCost: 716.40, laborCost: 290.53, equipmentCost: 0,
         lineTotal: 1006.93, conditionIds: [], crewDays: 0.6667,
         manHours: 5.3333, equipmentIds: [], hardwareIds: [],
+        doorHardware: [],
       },
     ],
     veAlternates: [
@@ -177,6 +178,7 @@ console.log('\n6. Hardware + calcFullLineItem')
     materialCost: 0, laborCost: 0, equipmentCost: 0,
     lineTotal: 0, conditionIds: [], crewDays: 0,
     manHours: 0, equipmentIds: [], hardwareIds: ['hw-001', 'hw-003'],
+    doorHardware: [],
   }
 
   const result = calcFullLineItem(li, DEFAULT_SETTINGS, false)

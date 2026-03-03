@@ -1,4 +1,4 @@
-import type { AppState, LineItem } from '@/types'
+import type { AppState } from '@/types'
 import { createDefaultAppState } from '@/data'
 
 const STORAGE_KEY = 'cgi_estimating_app_v1'
@@ -34,7 +34,7 @@ function migrateState(parsed: Partial<AppState>): AppState {
     settings = defaults.settings
     projects = projects.map(p => ({
       ...p,
-      lineItems: (p.lineItems ?? []).map((li: Partial<LineItem>) => ({
+      lineItems: (p.lineItems ?? []).map((li: any) => ({
         ...li,
         manHours: 0,
         conditionIds: [],

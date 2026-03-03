@@ -47,7 +47,7 @@ describe('DOOR_HARDWARE_DEFAULTS (DATA-03)', () => {
 
   it('each default entry references valid hardware IDs', () => {
     const validIds = new Set(SEED_DOOR_HARDWARE.map(h => h.id))
-    for (const [systemId, entries] of Object.entries(DOOR_HARDWARE_DEFAULTS)) {
+    for (const [_systemId, entries] of Object.entries(DOOR_HARDWARE_DEFAULTS)) {
       for (const entry of entries) {
         expect(validIds.has(entry.hardwareId)).toBe(true)
         expect(entry.quantity).toBeGreaterThan(0)
