@@ -7,7 +7,7 @@ function baseLineItem(overrides: Partial<LineItem> = {}): LineItem {
     id: 'test-li', systemTypeId: 'sys-001', glassTypeId: 'glass-001',
     frameSystemId: 'frame-001', description: '', quantity: 1,
     widthInches: 48, heightInches: 96, sqft: 0, perimeter: 0,
-    materialCost: 0, laborCost: 0, equipmentCost: 0,
+    materialCost: 0, laborCost: 0, equipmentCost: 0, doorHardwareCost: 0,
     lineTotal: 0, conditionIds: [], crewDays: 0, manHours: 0,
     equipmentIds: [], hardwareIds: [], doorHardware: [],
     ...overrides,
@@ -95,5 +95,43 @@ describe('calcFullLineItem', () => {
     const cdDecimals = result.crewDays.toString().split('.')[1]?.length ?? 0
     expect(mhDecimals).toBeLessThanOrEqual(4)
     expect(cdDecimals).toBeLessThanOrEqual(4)
+  })
+
+  it('computes doorHardwareCost and includes it in materialCost', () => {
+    // sys-009 (Swing Door) with 3 hinges ($15) + 1 closer ($85), qty 2
+    const li = baseLineItem({
+      systemTypeId: 'sys-009',
+      quantity: 2,
+      doorHardware: [
+        { hardwareId: 'dhw-001', quantity: 3 },
+        { hardwareId: 'dhw-002', quantity: 1 },
+      ],
+    })
+    const result = calcFullLineItem(li, DEFAULT_SETTINGS, false)
+    // doorHardwareCost = (15*3 + 85*1) * 2 = 260.00
+    expect(result.doorHardwareCost).toBe(260)
+    // materialCost should include door hardware
+    // Base materialCost (glass+frame+generic hw) for 48x96 qty2 = 1432.80 (no generic hw)
+    // totalMaterialCost = 1432.80 + 260 = 1692.80
+    expect(result.materialCost).toBeCloseTo(1692.80, 2)
+  })
+
+  it('preserves C-033: lineTotal = materialCost + laborCost + equipmentCost with door hardware', () => {
+    const li = baseLineItem({
+      systemTypeId: 'sys-009',
+      quantity: 1,
+      doorHardware: [
+        { hardwareId: 'dhw-001', quantity: 3 },
+      ],
+    })
+    const result = calcFullLineItem(li, DEFAULT_SETTINGS, false)
+    expect(result.lineTotal).toBeCloseTo(
+      result.materialCost + result.laborCost + result.equipmentCost, 2
+    )
+  })
+
+  it('returns doorHardwareCost = 0 for non-door items with no doorHardware', () => {
+    const result = calcFullLineItem(baseLineItem(), DEFAULT_SETTINGS, false)
+    expect(result.doorHardwareCost).toBe(0)
   })
 })

@@ -6,7 +6,7 @@ function validItem(overrides: Partial<LineItem> = {}): LineItem {
     id: 'li-1', systemTypeId: 'sys-001', glassTypeId: 'glass-001',
     frameSystemId: 'frame-001', description: '', quantity: 1,
     widthInches: 48, heightInches: 96, sqft: 0, perimeter: 0,
-    materialCost: 0, laborCost: 0, equipmentCost: 0,
+    materialCost: 0, laborCost: 0, equipmentCost: 0, doorHardwareCost: 0,
     lineTotal: 0, conditionIds: [], crewDays: 0, manHours: 0,
     equipmentIds: [], hardwareIds: [], doorHardware: [],
     ...overrides,

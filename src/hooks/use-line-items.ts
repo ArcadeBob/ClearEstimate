@@ -42,6 +42,7 @@ export function useLineItems(projectId: string) {
       materialCost: 0,
       laborCost: 0,
       equipmentCost: 0,
+      doorHardwareCost: 0,
       lineTotal: 0,
       conditionIds: [],
       crewDays: 0,

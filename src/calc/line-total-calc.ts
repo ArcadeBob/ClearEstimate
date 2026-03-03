@@ -2,6 +2,7 @@ import type { AppSettings, LineItem } from '@/types'
 import { calcSqft, calcPerimeter, calcMaterialCost } from './material-calc'
 import { calcLoadedRate, calcPWLoadedRate, calcBaseManHoursArea, calcBaseManHoursUnit, calcLaborCost } from './labor-calc'
 import { calcEquipmentCost } from './equipment-calc'
+import { calcDoorHardwareCost } from './door-hardware-calc'
 
 /**
  * Orchestrator: recalculates all derived fields on a line item.
@@ -47,14 +48,25 @@ export function calcFullLineItem(
   // Equipment
   const equipmentCost = calcEquipmentCost(selectedEquipment, crewDays)
 
+  // Door hardware (CALC-01)
+  const doorHardwareCost = calcDoorHardwareCost(
+    lineItem.doorHardware,
+    settings.doorHardware,
+    lineItem.quantity,
+  )
+
+  // materialCost includes door hardware
+  const totalMaterialCost = Math.round((materialCost + doorHardwareCost) * 100) / 100
+
   // Total (C-033)
-  const lineTotal = Math.round((materialCost + laborCost + equipmentCost) * 100) / 100
+  const lineTotal = Math.round((totalMaterialCost + laborCost + equipmentCost) * 100) / 100
 
   return {
     ...lineItem,
     sqft: Math.round(sqft * 100) / 100,
     perimeter: Math.round(perimeter * 100) / 100,
-    materialCost,
+    materialCost: totalMaterialCost,
+    doorHardwareCost,
     laborCost,
     equipmentCost,
     lineTotal,

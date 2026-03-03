@@ -1,13 +1,14 @@
 /**
  * Calculation Engine Verification Script
  *
- * Covers 6 formula paths to catch formula errors early:
+ * Covers 7 formula paths to catch formula errors early:
  * 1. Standard wage spot-check (area mode, $1007 target)
  * 2. Prevailing wage loaded rate
  * 3. Dual labor mode (area + unit + div-by-zero guard)
  * 4. Equipment cost with crew days
  * 5. Running totals with VE savings + multiplicative O&P
  * 6. Hardware cost aggregation
+ * 9. Door hardware cost + hinge suggestion (CALC-01, CALC-03)
  *
  * Run: npm run verify
  */
@@ -20,6 +21,7 @@ import { calcRunningTotals } from '../src/calc/summary-calc'
 import { suggestOPPercents } from '../src/calc/op-suggest'
 import { calcBenchmark } from '../src/calc/benchmark-calc'
 import { calcWinRate } from '../src/calc/win-rate-calc'
+import { calcDoorHardwareCost, suggestHingeCount } from '../src/calc/door-hardware-calc'
 import { DEFAULT_SETTINGS } from '../src/data'
 import type { LineItem, Project } from '../src/types'
 
@@ -139,7 +141,7 @@ console.log('\n5. Running Totals + VE + O&P')
         id: 'li-1', systemTypeId: 'sys-001', glassTypeId: 'glass-001',
         frameSystemId: 'frame-001', description: '', quantity: 1,
         widthInches: 48, heightInches: 96, sqft: 32, perimeter: 24,
-        materialCost: 716.40, laborCost: 290.53, equipmentCost: 0,
+        materialCost: 716.40, laborCost: 290.53, equipmentCost: 0, doorHardwareCost: 0,
         lineTotal: 1006.93, conditionIds: [], crewDays: 0.6667,
         manHours: 5.3333, equipmentIds: [], hardwareIds: [],
         doorHardware: [],
@@ -175,7 +177,7 @@ console.log('\n6. Hardware + calcFullLineItem')
     id: 'test-li', systemTypeId: 'sys-001', glassTypeId: 'glass-001',
     frameSystemId: 'frame-001', description: '', quantity: 2,
     widthInches: 48, heightInches: 96, sqft: 0, perimeter: 0,
-    materialCost: 0, laborCost: 0, equipmentCost: 0,
+    materialCost: 0, laborCost: 0, equipmentCost: 0, doorHardwareCost: 0,
     lineTotal: 0, conditionIds: [], crewDays: 0,
     manHours: 0, equipmentIds: [], hardwareIds: ['hw-001', 'hw-003'],
     doorHardware: [],
@@ -230,6 +232,55 @@ console.log('\n8. Benchmark + Win Rate')
   assert('winRate', winRate!, 0.6667, 0.001)
 
   assertExact('winRate null', calcWinRate([]), null)
+}
+
+// ── Test 9: Door Hardware Cost + Hinge Suggestion ──
+console.log('\n9. Door Hardware Cost + Hinge Suggestion')
+{
+  // Door hardware cost: 3 hinges at $15 + 1 closer at $85 on 2 doors
+  const dhwCost = calcDoorHardwareCost(
+    [
+      { hardwareId: 'dhw-001', quantity: 3 },
+      { hardwareId: 'dhw-002', quantity: 1 },
+    ],
+    DEFAULT_SETTINGS.doorHardware,
+    2,
+  )
+  assert('doorHardwareCost', dhwCost, 260.00)
+
+  // Missing hardware ID contributes $0
+  const dhwMissing = calcDoorHardwareCost(
+    [{ hardwareId: 'nonexistent', quantity: 5 }],
+    DEFAULT_SETTINGS.doorHardware,
+    1,
+  )
+  assert('doorHardwareCost (missing)', dhwMissing, 0)
+
+  // Full line item with door hardware — doorHardwareCost in materialCost
+  const doorLi: LineItem = {
+    id: 'door-li', systemTypeId: 'sys-009', glassTypeId: 'glass-001',
+    frameSystemId: 'frame-001', description: '', quantity: 2,
+    widthInches: 48, heightInches: 96, sqft: 0, perimeter: 0,
+    materialCost: 0, laborCost: 0, equipmentCost: 0,
+    doorHardwareCost: 0,
+    lineTotal: 0, conditionIds: [], crewDays: 0,
+    manHours: 0, equipmentIds: [], hardwareIds: [],
+    doorHardware: [
+      { hardwareId: 'dhw-001', quantity: 3 },
+      { hardwareId: 'dhw-002', quantity: 1 },
+    ],
+  }
+  const doorResult = calcFullLineItem(doorLi, DEFAULT_SETTINGS, false)
+  assert('door materialCost includes dhw', doorResult.doorHardwareCost, 260.00)
+  // C-033: lineTotal = materialCost + laborCost + equipmentCost
+  assert('door C-033', doorResult.lineTotal, doorResult.materialCost + doorResult.laborCost + doorResult.equipmentCost, 0.01)
+
+  // Hinge suggestions
+  assertExact('hinge 48"', suggestHingeCount(48, 'sys-009'), 2)
+  assertExact('hinge 72"', suggestHingeCount(72, 'sys-009'), 3)
+  assertExact('hinge 96"', suggestHingeCount(96, 'sys-009'), 4)
+  assertExact('hinge 130"', suggestHingeCount(130, 'sys-009'), 4)
+  assertExact('hinge non-door', suggestHingeCount(72, 'sys-001'), null)
 }
 
 // ── Summary ──
