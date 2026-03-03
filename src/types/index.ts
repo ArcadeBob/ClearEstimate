@@ -45,6 +45,7 @@ export interface LineItem {
   manHours: number
   equipmentIds: string[]
   hardwareIds: string[]
+  doorHardware: DoorHardwareEntry[]  // Door-specific hardware with per-item quantities
 }
 
 export interface VEAlternate {
@@ -106,6 +107,11 @@ export interface Hardware {
   unitCost: number
 }
 
+export interface DoorHardwareEntry {
+  hardwareId: string   // References Hardware.id in settings.doorHardware
+  quantity: number     // Per-door quantity (e.g., 3 hinges per door)
+}
+
 export interface Equipment {
   id: string
   name: string
@@ -120,6 +126,7 @@ export interface AppSettings {
   laborRates: LaborRate[]
   conditions: Condition[]
   hardware: Hardware[]
+  doorHardware: Hardware[]   // Door hardware catalog (12 items, dhw-xxx IDs)
   equipment: Equipment[]
   systemTypes: SystemType[]
 }
