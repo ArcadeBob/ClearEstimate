@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid'
 import type { LineItem } from '@/types'
 import { useAppStore } from './use-app-store'
 import { calcFullLineItem, applyDoorHardwareAutoPopulate } from '@/calc'
+import { cascadeVEAlternates, touchTimestamp } from './project-helpers'
 
 export interface LineItemValidation {
   isValid: boolean
@@ -58,7 +59,7 @@ export function useLineItems(projectId: string) {
           ? {
               ...p,
               lineItems: [...p.lineItems, newItem],
-              timestamps: { ...p.timestamps, updatedAt: new Date().toISOString() },
+              timestamps: touchTimestamp(p.timestamps),
             }
           : p,
       ),
@@ -91,19 +92,11 @@ export function useLineItems(projectId: string) {
             return merged
           })
 
-          // Auto-update VE alternate originalCost (C-015)
-          const newVeAlternates = p.veAlternates.map(ve => {
-            const linkedItem = newLineItems.find(li => li.id === ve.lineItemId)
-            if (!linkedItem) return ve
-            const originalCost = linkedItem.lineTotal
-            return { ...ve, originalCost, savings: originalCost - ve.alternateCost }
-          })
-
           return {
             ...p,
             lineItems: newLineItems,
-            veAlternates: newVeAlternates,
-            timestamps: { ...p.timestamps, updatedAt: new Date().toISOString() },
+            veAlternates: cascadeVEAlternates(p.veAlternates, newLineItems),
+            timestamps: touchTimestamp(p.timestamps),
           }
         }),
       }))
@@ -120,9 +113,8 @@ export function useLineItems(projectId: string) {
           return {
             ...p,
             lineItems: p.lineItems.filter(li => li.id !== itemId),
-            // Cascade delete VE alternates referencing this line item
             veAlternates: p.veAlternates.filter(ve => ve.lineItemId !== itemId),
-            timestamps: { ...p.timestamps, updatedAt: new Date().toISOString() },
+            timestamps: touchTimestamp(p.timestamps),
           }
         }),
       }))
@@ -142,7 +134,7 @@ export function useLineItems(projectId: string) {
             ? {
                 ...p,
                 lineItems: [...p.lineItems, newItem],
-                timestamps: { ...p.timestamps, updatedAt: new Date().toISOString() },
+                timestamps: touchTimestamp(p.timestamps),
               }
             : p,
         ),
@@ -162,16 +154,11 @@ export function useLineItems(projectId: string) {
           if (!validateLineItem(li).isValid) return li
           return calcFullLineItem(li, prev.settings, p.prevailingWage, p.pwBaseRate, p.pwFringeRate)
         })
-        const newVeAlternates = p.veAlternates.map(ve => {
-          const linkedItem = newLineItems.find(li => li.id === ve.lineItemId)
-          if (!linkedItem) return ve
-          return { ...ve, originalCost: linkedItem.lineTotal, savings: linkedItem.lineTotal - ve.alternateCost }
-        })
         return {
           ...p,
           lineItems: newLineItems,
-          veAlternates: newVeAlternates,
-          timestamps: { ...p.timestamps, updatedAt: new Date().toISOString() },
+          veAlternates: cascadeVEAlternates(p.veAlternates, newLineItems),
+          timestamps: touchTimestamp(p.timestamps),
         }
       }),
     }))

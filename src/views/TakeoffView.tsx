@@ -565,11 +565,17 @@ const LineItemRow = memo(function LineItemRow({
 
 // ── DoorHardwareSubRow ──────────────────────────────────────────
 
-function DoorHardwareSubRow({ item, settings }: { item: LineItem; settings: AppSettings }) {
+interface DoorHardwareSubRowProps {
+  item: LineItem
+  settings: AppSettings
+}
+
+function DoorHardwareSubRow({ item, settings }: DoorHardwareSubRowProps): React.JSX.Element {
+  const catalogMap = new Map(settings.doorHardware.map(h => [h.id, h]))
   return (
     <div className="flex flex-wrap items-center gap-1.5 border-t border-gray-100 px-3 py-1.5 pl-8 text-xs text-gray-500">
       {item.doorHardware.map(entry => {
-        const hw = settings.doorHardware.find(h => h.id === entry.hardwareId)
+        const hw = catalogMap.get(entry.hardwareId)
         if (!hw) return null
         return (
           <span key={entry.hardwareId} className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-gray-600">
@@ -584,31 +590,32 @@ function DoorHardwareSubRow({ item, settings }: { item: LineItem; settings: AppS
 
 // ── DoorHardwarePanel ───────────────────────────────────────────
 
-function DoorHardwarePanel({ item, settings, onAdd, onRemove, onUpdateQty, onReset }: {
+interface DoorHardwarePanelProps {
   item: LineItem
   settings: AppSettings
   onAdd: (hardwareId: string) => void
   onRemove: (hardwareId: string) => void
   onUpdateQty: (hardwareId: string, quantity: number) => void
   onReset: () => void
-}) {
+}
+
+function DoorHardwarePanel({ item, settings, onAdd, onRemove, onUpdateQty, onReset }: DoorHardwarePanelProps): React.JSX.Element {
   return (
     <div>
       <label className="text-xs font-medium text-gray-600">Door Hardware</label>
       <div className="mt-1 space-y-1">
         {settings.doorHardware.map(hw => {
           const entry = item.doorHardware.find(e => e.hardwareId === hw.id)
-          const isSelected = !!entry
           return (
             <label key={hw.id} className="flex items-center gap-2 text-xs">
               <input
                 type="checkbox"
-                checked={isSelected}
-                onChange={() => isSelected ? onRemove(hw.id) : onAdd(hw.id)}
+                checked={!!entry}
+                onChange={() => entry ? onRemove(hw.id) : onAdd(hw.id)}
                 className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600"
               />
-              <span className={isSelected ? '' : 'text-gray-400'}>{hw.name}</span>
-              {isSelected && entry ? (
+              <span className={entry ? '' : 'text-gray-400'}>{hw.name}</span>
+              {entry ? (
                 <input
                   type="number"
                   value={entry.quantity}
@@ -636,12 +643,14 @@ function DoorHardwarePanel({ item, settings, onAdd, onRemove, onUpdateQty, onRes
 
 // ── TotalRow helper ─────────────────────────────────────────────
 
-function TotalRow({ label, value, bold, className }: {
+interface TotalRowProps {
   label: string
   value: number
   bold?: boolean
   className?: string
-}) {
+}
+
+function TotalRow({ label, value, bold, className }: TotalRowProps): React.JSX.Element {
   return (
     <div className={`flex justify-between ${bold ? 'font-semibold' : ''} ${className ?? ''}`}>
       <span className="text-gray-600">{label}</span>

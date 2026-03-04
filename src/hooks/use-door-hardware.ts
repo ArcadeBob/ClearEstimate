@@ -3,6 +3,7 @@ import type { DoorHardwareEntry, Hardware } from '@/types'
 import { useAppStore } from './use-app-store'
 import { calcFullLineItem } from '@/calc'
 import { validateLineItem } from './use-line-items'
+import { cascadeVEAlternates, touchTimestamp } from './project-helpers'
 
 // ── Pure mutation functions (exported for testing) ──────────────
 
@@ -53,7 +54,14 @@ export function applyUpdateDoorHardwareQty(
 
 // ── Hook ────────────────────────────────────────────────────────
 
-export function useDoorHardware(projectId: string, lineItemId: string) {
+interface UseDoorHardwareResult {
+  doorHardware: DoorHardwareEntry[]
+  addDoorHardware: (hardwareId: string, quantity?: number) => void
+  removeDoorHardware: (hardwareId: string) => void
+  updateDoorHardwareQty: (hardwareId: string, quantity: number) => void
+}
+
+export function useDoorHardware(projectId: string, lineItemId: string): UseDoorHardwareResult {
   const { state, setState } = useAppStore()
 
   const project = state.projects.find(p => p.id === projectId)
@@ -84,19 +92,11 @@ export function useDoorHardware(projectId: string, lineItemId: string) {
             return updated
           })
 
-          // Auto-update VE alternate originalCost (C-015)
-          const newVeAlternates = p.veAlternates.map(ve => {
-            const linkedItem = newLineItems.find(item => item.id === ve.lineItemId)
-            if (!linkedItem) return ve
-            const originalCost = linkedItem.lineTotal
-            return { ...ve, originalCost, savings: originalCost - ve.alternateCost }
-          })
-
           return {
             ...p,
             lineItems: newLineItems,
-            veAlternates: newVeAlternates,
-            timestamps: { ...p.timestamps, updatedAt: new Date().toISOString() },
+            veAlternates: cascadeVEAlternates(p.veAlternates, newLineItems),
+            timestamps: touchTimestamp(p.timestamps),
           }
         }),
       }))
@@ -118,7 +118,6 @@ export function useDoorHardware(projectId: string, lineItemId: string) {
     (hardwareId: string) => {
       applyMutation(li => {
         if (!li) return null
-        // Check if entry exists; if not, return null (no-op)
         if (!li.doorHardware.some(e => e.hardwareId === hardwareId)) return null
         return applyRemoveDoorHardware(li.doorHardware, hardwareId)
       })
