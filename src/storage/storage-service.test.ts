@@ -68,6 +68,7 @@ describe('storage-service', () => {
       expect(li.manHours).toBe(0)
       expect(li.conditionIds).toEqual([])
       expect(li.doorHardware).toEqual([])
+      expect(li.doorHardwareCost).toBe(0)
       // Original fields preserved
       expect(li.description).toBe('Old line item')
       expect(li.quantity).toBe(5)
@@ -123,6 +124,7 @@ describe('storage-service', () => {
       // Line items gain empty doorHardware array
       const li = state.projects[0]!.lineItems[0]!
       expect(li.doorHardware).toEqual([])
+      expect(li.doorHardwareCost).toBe(0)
 
       // Existing line item fields preserved
       expect(li.description).toBe('Existing line item')
@@ -157,6 +159,7 @@ describe('storage-service', () => {
       // v2->v3 applied: line items get doorHardware
       const li = state.projects[0]!.lineItems[0]!
       expect(li.doorHardware).toEqual([])
+      expect(li.doorHardwareCost).toBe(0)
       expect(li.manHours).toBe(0)
       expect(li.conditionIds).toEqual([])
     })
