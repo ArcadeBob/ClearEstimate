@@ -1,27 +1,14 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-milestone_name: milestone
-status: unknown
-last_updated: "2026-03-03T14:25:44.008Z"
-progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 3
-  completed_plans: 3
----
-
----
-gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
+milestone_name: Door Hardware Selection
 status: in-progress
-last_updated: "2026-03-03T14:21:14Z"
+last_updated: "2026-03-04T00:35:03Z"
 progress:
-  total_phases: 4
-  completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  total_phases: 5
+  completed_phases: 3
+  total_plans: 4
+  completed_plans: 4
 ---
 
 # Project State
@@ -31,23 +18,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-02)
 
 **Core value:** Estimators can accurately price door hardware per line item without bloating the takeoff layout
-**Current focus:** Phase 2: Calculation Engine
+**Current focus:** Phase 3: State & Behavior (next after Phase 5 gap closure)
 
 ## Current Position
 
-Phase: 2 of 4 (Calculation Engine)
+Phase: 5 complete (of 5 total, execution order: 1 -> 2 -> 5 -> 3 -> 4)
 Plan: 1 of 1 in current phase -- COMPLETE
-Status: Phase 2 Plan 1 Complete
-Last activity: 2026-03-03 -- Completed 02-01 (Door Hardware Calc + Hinge Suggestion)
+Status: Phase 5 complete, Phase 3 next
+Last activity: 2026-03-03 -- Phase 5 gap closure executed (barrel export + migration fix)
 
-Progress: [#####░░░░░] 50%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
+- Total plans completed: 4
 - Average duration: 3 min
-- Total execution time: 0.17 hours
+- Total execution time: 0.20 hours
 
 **By Phase:**
 
@@ -55,13 +42,11 @@ Progress: [#####░░░░░] 50%
 |-------|-------|-------|----------|
 | 1 - Data Model & Migration | 2 | 6 min | 3 min |
 | 2 - Calculation Engine | 1 | 4 min | 4 min |
+| 5 - Integration Fixes | 1 | 2 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2 min), 01-02 (4 min), 02-01 (4 min)
+- Last 5 plans: 01-01 (2 min), 01-02 (4 min), 02-01 (4 min), 05-01 (2 min)
 - Trend: stable
-
-*Updated after each plan completion*
-| Phase 02 P01 | 4min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -79,6 +64,8 @@ Recent decisions affecting current work:
 - 01-02: Sequential migration pattern: each version bump is an independent if (version < N) block
 - 02-01: Door hardware cost added in orchestrator (not calcMaterialCost) to preserve separation of concerns
 - 02-01: materialCost = baseMaterialCost + doorHardwareCost, keeping C-033 lineTotal formula unchanged
+- Audit: Phase 5 created for integration gap closure (barrel export + migration fix) before Phase 3
+- 05-01: No new decisions -- followed plan as specified
 
 ### Pending Todos
 
@@ -91,5 +78,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-03
-Stopped at: Completed 02-01-PLAN.md
-Resume file: .planning/phases/02-calculation-engine/02-01-SUMMARY.md
+Stopped at: Completed 05-01-PLAN.md (Phase 5 gap closure)
+Resume file: .planning/phases/05-integration-fixes/05-01-SUMMARY.md
