@@ -4,11 +4,13 @@ import { useProjects } from '@/hooks/use-projects'
 import { useLineItems, validateLineItem } from '@/hooks/use-line-items'
 import { useVEAlternates } from '@/hooks/use-ve-alternates'
 import { useAppStore } from '@/hooks/use-app-store'
+import { useDoorHardware } from '@/hooks/use-door-hardware'
 import {
   calcRunningTotals,
   calcBenchmark,
   formatCurrency,
   shouldSuggestEquipment,
+  isDoorSystemType,
 } from '@/calc'
 import { BenchmarkBadge } from '@/components/BenchmarkBadge'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
@@ -104,6 +106,7 @@ export function TakeoffView() {
               key={item.id}
               item={item}
               settings={settings}
+              projectId={id!}
               isExpanded={expandedId === item.id}
               onToggle={handleToggle}
               onUpdate={handleUpdate}
@@ -283,6 +286,7 @@ export function TakeoffView() {
 interface LineItemRowProps {
   item: LineItem
   settings: AppSettings
+  projectId: string
   isExpanded: boolean
   onToggle: (id: string) => void
   onUpdate: (id: string, updates: Partial<LineItem>) => void
@@ -291,10 +295,13 @@ interface LineItemRowProps {
 }
 
 const LineItemRow = memo(function LineItemRow({
-  item, settings, isExpanded, onToggle, onUpdate, onDuplicate, onDelete,
+  item, settings, projectId, isExpanded, onToggle, onUpdate, onDuplicate, onDelete,
 }: LineItemRowProps) {
+  // Hook must be called unconditionally (React rules); functions used by DoorHardwarePanel below
+  useDoorHardware(projectId, item.id)
   const validation = validateLineItem(item)
   const systemType = settings.systemTypes.find(s => s.id === item.systemTypeId)
+  const isDoor = isDoorSystemType(item.systemTypeId)
   const benchmark = calcBenchmark(item.lineTotal, item.sqft, systemType)
   const showEquipSuggestion = shouldSuggestEquipment(item.heightInches) && item.equipmentIds.length === 0
 
@@ -395,6 +402,11 @@ const LineItemRow = memo(function LineItemRow({
         </div>
       )}
 
+      {/* Door Hardware Sub-Row */}
+      {isDoor && item.doorHardware.length > 0 && (
+        <DoorHardwareSubRow item={item} settings={settings} />
+      )}
+
       {/* Expanded Panel */}
       {isExpanded && (
         <div className="border-t border-gray-200 bg-gray-50 px-4 py-3">
@@ -485,6 +497,18 @@ const LineItemRow = memo(function LineItemRow({
                   <span className="text-gray-500">Material</span>
                   <span>{formatCurrency(item.materialCost)}</span>
                 </div>
+                {isDoor && (
+                  <>
+                    <div className="flex justify-between pl-3">
+                      <span className="text-gray-400">Glass + Frame</span>
+                      <span className="text-gray-400">{formatCurrency(item.materialCost - item.doorHardwareCost)}</span>
+                    </div>
+                    <div className="flex justify-between pl-3">
+                      <span className="text-gray-400">Door Hardware</span>
+                      <span className="text-gray-400">{formatCurrency(item.doorHardwareCost)}</span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between">
                   <span className="text-gray-500">Labor</span>
                   <span>{formatCurrency(item.laborCost)}</span>
@@ -526,6 +550,25 @@ const LineItemRow = memo(function LineItemRow({
     </div>
   )
 })
+
+// ── DoorHardwareSubRow ──────────────────────────────────────────
+
+function DoorHardwareSubRow({ item, settings }: { item: LineItem; settings: AppSettings }) {
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 border-t border-gray-100 px-3 py-1.5 pl-8 text-xs text-gray-500">
+      {item.doorHardware.map(entry => {
+        const hw = settings.doorHardware.find(h => h.id === entry.hardwareId)
+        if (!hw) return null
+        return (
+          <span key={entry.hardwareId} className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-gray-600">
+            {hw.name}{entry.quantity > 1 ? ` \u00D7${entry.quantity}` : ''}
+          </span>
+        )
+      })}
+      <span className="ml-auto font-medium text-gray-700">{formatCurrency(item.doorHardwareCost)}</span>
+    </div>
+  )
+}
 
 // ── TotalRow helper ─────────────────────────────────────────────
 
