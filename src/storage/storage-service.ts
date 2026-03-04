@@ -54,6 +54,7 @@ function migrateState(parsed: Partial<AppState>): AppState {
       lineItems: (p.lineItems ?? []).map((li: any) => ({
         ...li,
         doorHardware: li.doorHardware ?? [],
+        doorHardwareCost: li.doorHardwareCost ?? 0,
       })),
     }))
     version = 3
