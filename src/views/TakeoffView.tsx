@@ -11,6 +11,7 @@ import {
   formatCurrency,
   shouldSuggestEquipment,
   isDoorSystemType,
+  getDefaultDoorHardware,
 } from '@/calc'
 import { BenchmarkBadge } from '@/components/BenchmarkBadge'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
@@ -297,8 +298,8 @@ interface LineItemRowProps {
 const LineItemRow = memo(function LineItemRow({
   item, settings, projectId, isExpanded, onToggle, onUpdate, onDuplicate, onDelete,
 }: LineItemRowProps) {
-  // Hook must be called unconditionally (React rules); functions used by DoorHardwarePanel below
-  useDoorHardware(projectId, item.id)
+  // Hook must be called unconditionally (React rules); functions used by DoorHardwarePanel
+  const { addDoorHardware, removeDoorHardware, updateDoorHardwareQty } = useDoorHardware(projectId, item.id)
   const validation = validateLineItem(item)
   const systemType = settings.systemTypes.find(s => s.id === item.systemTypeId)
   const isDoor = isDoorSystemType(item.systemTypeId)
@@ -446,24 +447,35 @@ const LineItemRow = memo(function LineItemRow({
               </div>
             </div>
 
-            {/* Hardware (C-016: qty = lineItem.quantity) */}
-            <div>
-              <label className="text-xs font-medium text-gray-600">Hardware</label>
-              <div className="mt-1 space-y-1">
-                {settings.hardware.map(h => (
-                  <label key={h.id} className="flex items-center gap-2 text-xs">
-                    <input
-                      type="checkbox"
-                      checked={item.hardwareIds.includes(h.id)}
-                      onChange={() => toggleArray('hardwareIds', h.id)}
-                      className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600"
-                    />
-                    <span>{h.name}</span>
-                    <span className="text-gray-400">{formatCurrency(h.unitCost)}/ea</span>
-                  </label>
-                ))}
+            {/* Hardware: door-specific panel or generic checkboxes */}
+            {isDoor ? (
+              <DoorHardwarePanel
+                item={item}
+                settings={settings}
+                onAdd={addDoorHardware}
+                onRemove={removeDoorHardware}
+                onUpdateQty={updateDoorHardwareQty}
+                onReset={() => onUpdate(item.id, { doorHardware: getDefaultDoorHardware(item.systemTypeId, item.heightInches) })}
+              />
+            ) : (
+              <div>
+                <label className="text-xs font-medium text-gray-600">Hardware</label>
+                <div className="mt-1 space-y-1">
+                  {settings.hardware.map(h => (
+                    <label key={h.id} className="flex items-center gap-2 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={item.hardwareIds.includes(h.id)}
+                        onChange={() => toggleArray('hardwareIds', h.id)}
+                        className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600"
+                      />
+                      <span>{h.name}</span>
+                      <span className="text-gray-400">{formatCurrency(h.unitCost)}/ea</span>
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Equipment */}
             <div>
@@ -566,6 +578,58 @@ function DoorHardwareSubRow({ item, settings }: { item: LineItem; settings: AppS
         )
       })}
       <span className="ml-auto font-medium text-gray-700">{formatCurrency(item.doorHardwareCost)}</span>
+    </div>
+  )
+}
+
+// ── DoorHardwarePanel ───────────────────────────────────────────
+
+function DoorHardwarePanel({ item, settings, onAdd, onRemove, onUpdateQty, onReset }: {
+  item: LineItem
+  settings: AppSettings
+  onAdd: (hardwareId: string) => void
+  onRemove: (hardwareId: string) => void
+  onUpdateQty: (hardwareId: string, quantity: number) => void
+  onReset: () => void
+}) {
+  return (
+    <div>
+      <label className="text-xs font-medium text-gray-600">Door Hardware</label>
+      <div className="mt-1 space-y-1">
+        {settings.doorHardware.map(hw => {
+          const entry = item.doorHardware.find(e => e.hardwareId === hw.id)
+          const isSelected = !!entry
+          return (
+            <label key={hw.id} className="flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={() => isSelected ? onRemove(hw.id) : onAdd(hw.id)}
+                className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600"
+              />
+              <span className={isSelected ? '' : 'text-gray-400'}>{hw.name}</span>
+              {isSelected && entry ? (
+                <input
+                  type="number"
+                  value={entry.quantity}
+                  min={1}
+                  onChange={e => onUpdateQty(hw.id, Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-12 rounded border border-gray-200 px-1 py-0.5 text-center text-xs"
+                />
+              ) : (
+                <span className="text-gray-400">{formatCurrency(hw.unitCost)}/ea</span>
+              )}
+            </label>
+          )
+        })}
+      </div>
+      <button
+        type="button"
+        onClick={onReset}
+        className="mt-2 rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100"
+      >
+        Reset to Defaults
+      </button>
     </div>
   )
 }
