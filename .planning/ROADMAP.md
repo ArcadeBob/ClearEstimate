@@ -57,10 +57,10 @@ Plans:
   1. When an estimator selects a door system type on a line item for the first time, the default hardware set for that door type auto-populates (only when doorHardware array is empty -- never overwrites existing selections)
   2. Estimator can add a hardware item not in the defaults and remove any hardware item from the current selection, with the change persisting through save/reload
   3. Changing a hardware item's per-door quantity updates correctly and the new quantity persists through save/reload
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 03-01: TBD
+- [ ] 03-01-PLAN.md -- Auto-populate defaults, getDefaultDoorHardware helper, and useDoorHardware CRUD hook
 
 ### Phase 4: UI Components
 **Goal**: Estimators can see and interact with door hardware selections directly in the Takeoff view without leaving the line item context
