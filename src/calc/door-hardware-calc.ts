@@ -11,8 +11,9 @@ export function calcDoorHardwareCost(
   doorHardwareCatalog: Hardware[],
   quantity: number,
 ): number {
+  const catalogMap = new Map(doorHardwareCatalog.map(h => [h.id, h]))
   const total = doorHardwareEntries.reduce((sum, entry) => {
-    const hw = doorHardwareCatalog.find(h => h.id === entry.hardwareId)
+    const hw = catalogMap.get(entry.hardwareId)
     if (!hw) return sum
     return sum + hw.unitCost * entry.quantity * quantity
   }, 0)

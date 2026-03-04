@@ -62,7 +62,7 @@ export function useDoorHardware(projectId: string, lineItemId: string) {
 
   /** Shared helper: apply door hardware change, recalc, VE cascade, timestamp */
   const applyMutation = useCallback(
-    (mutate: (li: typeof lineItem) => DoorHardwareEntry[] | null) => {
+    (mutate: (li: typeof lineItem, catalog: Hardware[]) => DoorHardwareEntry[] | null) => {
       setState(prev => ({
         ...prev,
         projects: prev.projects.map(p => {
@@ -71,7 +71,7 @@ export function useDoorHardware(projectId: string, lineItemId: string) {
           const li = p.lineItems.find(item => item.id === lineItemId)
           if (!li) return p
 
-          const newDoorHardware = mutate(li)
+          const newDoorHardware = mutate(li, prev.settings.doorHardware)
           if (newDoorHardware === null) return p // no-op
 
           const updated = { ...li, doorHardware: newDoorHardware }
@@ -106,12 +106,12 @@ export function useDoorHardware(projectId: string, lineItemId: string) {
 
   const addDoorHardware = useCallback(
     (hardwareId: string, quantity: number = 1) => {
-      applyMutation(li => {
+      applyMutation((li, catalog) => {
         if (!li) return null
-        return applyAddDoorHardware(li.doorHardware, hardwareId, quantity, state.settings.doorHardware)
+        return applyAddDoorHardware(li.doorHardware, hardwareId, quantity, catalog)
       })
     },
-    [applyMutation, state.settings.doorHardware],
+    [applyMutation],
   )
 
   const removeDoorHardware = useCallback(
