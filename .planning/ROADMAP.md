@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Data Model & Migration** - Types, seed data, default hardware sets, schema migration, and door type utility
 - [x] **Phase 2: Calculation Engine** - Pure calc function for door hardware cost and smart hinge suggestion
-- [ ] **Phase 5: Integration Fixes** - Barrel export, migration fix, roadmap cleanup (gap closure)
+- [x] **Phase 5: Integration Fixes** - Barrel export, migration fix, roadmap cleanup (gap closure)
 - [ ] **Phase 3: State & Behavior** - Hook logic for auto-populating defaults and add/remove CRUD operations
 - [ ] **Phase 4: UI Components** - Sub-row display, detail panel breakdown, and reset-to-defaults button
 
@@ -100,6 +100,6 @@ Phases execute in dependency order: 1 -> 2 -> 5 -> 3 -> 4
 |-------|----------------|--------|-----------|
 | 1. Data Model & Migration | 2/2 | Complete | 2026-03-02 |
 | 2. Calculation Engine | 1/1 | Complete | 2026-03-02 |
-| 5. Integration Fixes | 0/1 | Not started | - |
+| 5. Integration Fixes | 1/1 | Complete | 2026-03-03 |
 | 3. State & Behavior | 0/1 | Not started | - |
 | 4. UI Components | 0/2 | Not started | - |
