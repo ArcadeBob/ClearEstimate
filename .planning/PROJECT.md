@@ -2,7 +2,7 @@
 
 ## What This Is
 
-An enhancement to ClearEstimate's Takeoff view that adds door-specific hardware selection when a door system type (Swing, Sliding, Revolving) is chosen. When an estimator selects a door, a compact sub-row appears below the main line item showing hardware items like closers, hinges, handles, and locks — keeping the layout printable while capturing the full door spec.
+An enhancement to ClearEstimate's Takeoff view that adds door-specific hardware selection with per-item quantities, auto-populated defaults, and a compact sub-row display when a door system type (Swing, Sliding, Revolving, Entrance) is chosen.
 
 ## Core Value
 
@@ -13,55 +13,76 @@ Estimators can accurately price door hardware per line item without bloating the
 ### Validated
 
 - ✓ Line item takeoff with system type, glass type, frame system, dimensions, quantity — existing
-- ✓ Hardware checkbox selection with per-unit cost × line item quantity — existing (C-016)
+- ✓ Hardware checkbox selection with per-unit cost x line item quantity — existing (C-016)
 - ✓ Material cost includes hardware cost — existing (C-002)
 - ✓ Dual labor mode (area vs unit) for doors — existing (C-020)
 - ✓ Calculation pipeline via calcFullLineItem() — existing
 - ✓ localStorage persistence with debounce — existing
+- ✓ 12 door hardware seed items with pricing — v1.0
+- ✓ Per-item quantity on door hardware (hinges=3, closer=1) x door quantity — v1.0
+- ✓ Auto-populate default hardware set on door type selection — v1.0
+- ✓ Sub-row UI below door line items with compact hardware display — v1.0
+- ✓ Door hardware cost rolls into materialCost (C-033) — v1.0
+- ✓ Add/remove individual hardware items from defaults — v1.0
+- ✓ Different default hardware sets per door type — v1.0
+- ✓ Schema migration v2->v3 preserves user data — v1.0
+- ✓ isDoorSystemType() utility for door type detection — v1.0
+- ✓ Smart hinge count suggestion based on door height — v1.0
+- ✓ Cost breakdown sub-lines for door hardware — v1.0
+- ✓ Reset to Defaults button — v1.0
 
 ### Active
 
-- [ ] Door hardware seed data (12 items: hinges, closer, handle/pull, lock/cylinder, panic device, pivots, threshold, weatherstrip, sweep, auto-operator, card reader, exit device)
-- [ ] Per-item quantity on door hardware (e.g., hinges=3, closer=1) multiplied by door quantity
-- [ ] Auto-populate default hardware set when door system type selected (Swing: hinges + closer + handle + lock + threshold + weatherstrip)
-- [ ] Sub-row UI below door line items showing selected hardware in compact format
-- [ ] Door hardware cost rolls into material cost (consistent with existing hardware calc)
-- [ ] Estimators can add/remove items from pre-filled defaults
-- [ ] Estimators can add custom one-off hardware items (name + cost)
-- [ ] Different default hardware sets per door type (Swing vs Sliding vs Revolving)
+- [ ] Custom one-off hardware items (name + cost + qty) for unusual spec requirements
+- [ ] Hardware set templates — save custom sets and apply to future doors
+- [ ] Duplicate door line item copies hardware selections (deep copy)
+- [ ] Door hardware cost summary line in project running totals
+- [ ] Bulk hardware override across multiple door line items
 
 ### Out of Scope
 
 - Replacing existing generic hardware system (setting blocks, glazing tape, etc.) — those remain for non-door line items
 - Hardware supplier/vendor tracking — not needed for estimation
-- Hardware spec sheets or catalog integration — manual entry is sufficient for v1
-- Print/PDF layout changes — sub-row is already designed for printability
+- Hardware spec sheets or catalog integration — manual entry is sufficient
+- Manufacturer catalog integration — requires backend infrastructure
+- Fire rating/code compliance validation — architect's responsibility
+- Door handing (left/right swing) — affects installation, not estimation cost
+- Automatic pricing updates from web — requires API infrastructure
+- Full door schedule report (Div 08) — specification document, not estimation output
 
 ## Context
 
-ClearEstimate is a glazing contractor estimation tool. The existing Takeoff view lets estimators build line items for glass/aluminum systems. Three door system types exist (sys-007 Revolving, sys-008 Sliding, sys-009 Swing) using unit-based labor mode. Generic hardware (8 items like setting blocks, corner keys) already exists but covers glazing consumables — not door-specific items like closers, hinges, or panic devices.
+ClearEstimate is a glazing contractor estimation tool (React 19 + TypeScript 5 + Vite 6). Shipped v1.0 Door Hardware Selection with 5,344 LOC TypeScript across 49 modified files.
 
-The existing hardware system uses `hardwareIds: string[]` on LineItem with a flat cost calc: `Σ(unitCost × lineItem.quantity)`. Door hardware needs per-item quantities (e.g., 3 hinges per door × 2 doors = 6 hinges), which is a different model than the existing 1:1 hardware approach.
+Tech stack: React 19, TypeScript 5 (strict), Vite 6, Tailwind CSS v4, React Router 7, localStorage persistence.
 
-The sub-row pattern is driven by print layout constraints — a single line item row can't fit both system/glass details AND a full hardware breakdown without breaking page layout.
+Test suite: 182 unit tests (Vitest), 46 verify-calc assertions, 0 TypeScript errors. Schema at v3 with sequential migration pattern.
 
-## Constraints
-
-- **Existing calc pipeline**: Door hardware cost must flow through `calcFullLineItem()` and roll into `materialCost` (C-033)
-- **Type safety**: TypeScript strict mode with `noUncheckedIndexedAccess` — all new types must be fully typed
-- **Seed data pattern**: Follow existing pattern in `src/data/` for door hardware seed data
-- **Schema migration**: Adding new fields to LineItem requires a schema version bump in storage-service
-- **UI framework**: Tailwind CSS v4 (CSS-first), no component library — match existing Takeoff styling
+Door hardware uses a per-item quantity model (`DoorHardwareEntry` with `hardwareId` + `quantity`) different from the existing flat hardware approach. Cost is computed in the orchestrator (`calcFullLineItem`) and added to `materialCost`, preserving the C-033 lineTotal invariant.
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Sub-row UI for door hardware | Keep line items compact and printable — hardware detail on a second row | — Pending |
-| Per-item quantity model | Doors need 3 hinges but 1 closer — flat count doesn't work | — Pending |
-| Pre-filled defaults per door type | Saves estimator time — most doors need the same set | — Pending |
-| Custom one-off hardware items | Covers unusual spec requirements without bloating seed data | — Pending |
-| Door hardware rolls into material cost | Consistent with existing hardware cost treatment (C-002) | — Pending |
+| Sub-row UI for door hardware | Keep line items compact and printable | ✓ Good |
+| Per-item quantity model | Doors need 3 hinges but 1 closer — flat count doesn't work | ✓ Good |
+| Pre-filled defaults per door type | Saves estimator time — most doors need the same set | ✓ Good |
+| Door hardware rolls into materialCost | Consistent with existing hardware cost treatment (C-002, C-033) | ✓ Good |
+| isDoorSystemType as Phase 1 data utility | Needed by all subsequent phases, not just calc | ✓ Good |
+| Hook behavior (Phase 3) separate from visual UI (Phase 4) | Clean separation of state logic and presentation | ✓ Good |
+| Door hardware cost in orchestrator, not calcMaterialCost | Preserves separation of concerns | ✓ Good |
+| Pure function extraction for auto-populate | Enables unit testing without React rendering | ✓ Good |
+| Direct file imports to avoid circular barrel deps | door-hardware-helpers.ts imports directly from source files | ✓ Good |
+| Components inline in TakeoffView.tsx | DoorHardwareSubRow and DoorHardwarePanel are small and tightly coupled to view | ✓ Good |
+| Phase 5 inserted for integration gap closure | Audit found barrel export and migration completeness gaps before Phase 3 | ✓ Good |
+
+## Constraints
+
+- **Existing calc pipeline**: Door hardware cost flows through `calcFullLineItem()` and rolls into `materialCost` (C-033)
+- **Type safety**: TypeScript strict mode with `noUncheckedIndexedAccess` — all types fully typed
+- **Seed data pattern**: Follows existing pattern in `src/data/` for door hardware seed data
+- **Schema migration**: v2->v3 additive migration, sequential version bump pattern
+- **UI framework**: Tailwind CSS v4 (CSS-first), no component library — matches existing Takeoff styling
 
 ---
-*Last updated: 2026-03-02 after initialization*
+*Last updated: 2026-03-04 after v1.0 milestone*

@@ -1,26 +1,11 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-milestone_name: milestone
-status: completed
-stopped_at: Completed 04-01-PLAN.md
-last_updated: "2026-03-04T13:59:59.581Z"
-last_activity: 2026-03-04 -- Phase 4 Plan 01 executed (door hardware UI components)
-progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 6
-  completed_plans: 6
----
-
----
-gsd_state_version: 1.0
-milestone: v1.0
 milestone_name: Door Hardware Selection
-status: complete
-stopped_at: Completed 04-01-PLAN.md
-last_updated: "2026-03-04T13:54:49Z"
-last_activity: 2026-03-04 -- Phase 4 Plan 01 executed (door hardware UI components)
+status: shipped
+stopped_at: Milestone complete
+last_updated: "2026-03-04T14:30:00Z"
+last_activity: 2026-03-04 -- v1.0 milestone archived and tagged
 progress:
   total_phases: 5
   completed_phases: 5
@@ -32,19 +17,18 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-02)
+See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Estimators can accurately price door hardware per line item without bloating the takeoff layout
-**Current focus:** Milestone complete -- all 5 phases executed
+**Current focus:** v1.0 shipped — planning next milestone
 
 ## Current Position
 
-Phase: 4 complete (of 5 total, execution order: 1 -> 2 -> 5 -> 3 -> 4)
-Plan: 1 of 1 in current phase -- COMPLETE
-Status: All phases complete, milestone done
-Last activity: 2026-03-04 -- Phase 4 Plan 01 executed (door hardware UI components)
+Milestone: v1.0 Door Hardware Selection — SHIPPED 2026-03-04
+Status: Archived to .planning/milestones/
+Next: `/gsd:new-milestone` to start next version
 
-Progress: [██████████] 100%
+Progress: [██████████] 100% — SHIPPED
 
 ## Performance Metrics
 
@@ -63,44 +47,16 @@ Progress: [██████████] 100%
 | 3 - State & Behavior | 1 | 3 min | 3 min |
 | 4 - UI Components | 1 | 3 min | 3 min |
 
-**Recent Trend:**
-- Last 5 plans: 01-02 (4 min), 02-01 (4 min), 05-01 (2 min), 03-01 (3 min), 04-01 (3 min)
-- Trend: stable
-
 ## Accumulated Context
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- Roadmap: CALC-02 (isDoorSystemType) assigned to Phase 1 with data model, not Phase 2 with calc -- it is a data utility needed by all subsequent phases
-- Roadmap: UI-01/UI-02 (auto-populate, add/remove) assigned to Phase 3 as hook behavior, separate from Phase 4 visual UI
-- 01-01: DoorHardwareEntry uses hardwareId + quantity (not embedded Hardware object) to reference settings catalog
-- 01-01: DOOR_SYSTEM_IDS is a ReadonlySet for O(1) lookup and immutability
-- 01-02: v2->v3 migration is additive: spread existing settings, overlay only doorHardware catalog
-- 01-02: Migration uses any type for untyped localStorage JSON instead of Partial<LineItem>
-- 01-02: Sequential migration pattern: each version bump is an independent if (version < N) block
-- 02-01: Door hardware cost added in orchestrator (not calcMaterialCost) to preserve separation of concerns
-- 02-01: materialCost = baseMaterialCost + doorHardwareCost, keeping C-033 lineTotal formula unchanged
-- Audit: Phase 5 created for integration gap closure (barrel export + migration fix) before Phase 3
-- 05-01: No new decisions -- followed plan as specified
-- 03-01: Pure function extraction: applyDoorHardwareAutoPopulate and mutation functions exported for testing, hooks are thin wrappers
-- 03-01: Direct file imports in door-hardware-helpers.ts to avoid circular dependency through barrel
-- 03-01: Shared applyMutation helper in useDoorHardware centralizes recalc + VE cascade + timestamp
-- 04-01: DoorHardwareSubRow and DoorHardwarePanel defined inline in TakeoffView.tsx (not separate files)
-- 04-01: Hook called unconditionally in LineItemRow; isDoor flag controls rendering only
+All decisions logged in PROJECT.md Key Decisions table.
 
 ### Pending Todos
 
-None yet.
+None.
 
 ### Blockers/Concerns
 
-- ~~Research gap: Should sys-006 (Entrance System) be treated as a door type?~~ RESOLVED: Yes, sys-006 is a door type (4 total).
-
-## Session Continuity
-
-Last session: 2026-03-04T13:54:49Z
-Stopped at: Completed 04-01-PLAN.md
-Resume file: .planning/phases/04-ui-components/04-01-SUMMARY.md
+None — milestone shipped cleanly.
