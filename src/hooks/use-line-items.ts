@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import type { LineItem } from '@/types'
 import { useAppStore } from './use-app-store'
-import { calcFullLineItem } from '@/calc'
+import { calcFullLineItem, applyDoorHardwareAutoPopulate } from '@/calc'
 
 export interface LineItemValidation {
   isValid: boolean
@@ -76,6 +76,15 @@ export function useLineItems(projectId: string) {
           const newLineItems = p.lineItems.map(li => {
             if (li.id !== itemId) return li
             const merged = { ...li, ...updates }
+            // Auto-populate door hardware when systemTypeId changes (UI-01)
+            const autoPopulateResult = applyDoorHardwareAutoPopulate(
+              { systemTypeId: updates.systemTypeId, heightInches: merged.heightInches },
+              li.systemTypeId,
+              updates.systemTypeId,
+            )
+            if (autoPopulateResult !== null) {
+              merged.doorHardware = autoPopulateResult
+            }
             if (validateLineItem(merged).isValid) {
               return calcFullLineItem(merged, prev.settings, p.prevailingWage, p.pwBaseRate, p.pwFringeRate)
             }

@@ -13,6 +13,7 @@ export {
 } from './summary-calc'
 export { isDoorSystemType, DOOR_SYSTEM_IDS } from './door-system-util'
 export { calcDoorHardwareCost, suggestHingeCount } from './door-hardware-calc'
+export { getDefaultDoorHardware, applyDoorHardwareAutoPopulate } from './door-hardware-helpers'
 
 /**
  * Shared currency formatter: $1,234.56 — C-017
