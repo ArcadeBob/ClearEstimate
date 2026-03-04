@@ -71,11 +71,10 @@ Plans:
   2. Door hardware cost is visible as a distinct line in the expanded line item detail breakdown, separate from glass/frame/generic hardware costs
   3. A "Reset to Defaults" button restores the default hardware set for the current door type, replacing any customizations the estimator has made
   4. The sub-row layout remains compact enough that the Takeoff view stays printable without breaking page layout
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
+- [ ] 04-01-PLAN.md -- Door hardware sub-row, editing panel, cost breakdown sub-lines, and reset-to-defaults button
 
 ### Phase 5: Integration Fixes
 **Goal:** Close integration gaps identified by milestone audit so that Phases 3 and 4 can proceed without blockers
@@ -102,4 +101,4 @@ Phases execute in dependency order: 1 -> 2 -> 5 -> 3 -> 4
 | 2. Calculation Engine | 1/1 | Complete | 2026-03-02 |
 | 5. Integration Fixes | 1/1 | Complete | 2026-03-03 |
 | 3. State & Behavior | 0/1 | Not started | - |
-| 4. UI Components | 0/2 | Not started | - |
+| 4. UI Components | 0/1 | Not started | - |
