@@ -1,31 +1,16 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-milestone_name: milestone
-status: in-progress
-stopped_at: Phase 4 context gathered
-last_updated: "2026-03-04T05:59:46.335Z"
-last_activity: 2026-03-03 -- Phase 3 Plan 01 executed (door hardware state & behavior)
-progress:
-  total_phases: 5
-  completed_phases: 4
-  total_plans: 5
-  completed_plans: 5
----
-
----
-gsd_state_version: 1.0
-milestone: v1.0
 milestone_name: Door Hardware Selection
-status: in-progress
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-03-04T05:19:49Z"
-last_activity: 2026-03-03 -- Phase 3 Plan 01 executed (door hardware state & behavior)
+status: complete
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-03-04T13:54:49Z"
+last_activity: 2026-03-04 -- Phase 4 Plan 01 executed (door hardware UI components)
 progress:
   total_phases: 5
-  completed_phases: 4
-  total_plans: 5
-  completed_plans: 5
+  completed_phases: 5
+  total_plans: 6
+  completed_plans: 6
 ---
 
 # Project State
@@ -35,23 +20,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-02)
 
 **Core value:** Estimators can accurately price door hardware per line item without bloating the takeoff layout
-**Current focus:** Phase 4: UI Integration (next after Phase 3 state & behavior)
+**Current focus:** Milestone complete -- all 5 phases executed
 
 ## Current Position
 
-Phase: 3 complete (of 5 total, execution order: 1 -> 2 -> 5 -> 3 -> 4)
+Phase: 4 complete (of 5 total, execution order: 1 -> 2 -> 5 -> 3 -> 4)
 Plan: 1 of 1 in current phase -- COMPLETE
-Status: Phase 3 complete, Phase 4 next
-Last activity: 2026-03-03 -- Phase 3 Plan 01 executed (door hardware state & behavior)
+Status: All phases complete, milestone done
+Last activity: 2026-03-04 -- Phase 4 Plan 01 executed (door hardware UI components)
 
 Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
+- Total plans completed: 6
 - Average duration: 3 min
-- Total execution time: 0.25 hours
+- Total execution time: 0.30 hours
 
 **By Phase:**
 
@@ -61,9 +46,10 @@ Progress: [██████████] 100%
 | 2 - Calculation Engine | 1 | 4 min | 4 min |
 | 5 - Integration Fixes | 1 | 2 min | 2 min |
 | 3 - State & Behavior | 1 | 3 min | 3 min |
+| 4 - UI Components | 1 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2 min), 01-02 (4 min), 02-01 (4 min), 05-01 (2 min), 03-01 (3 min)
+- Last 5 plans: 01-02 (4 min), 02-01 (4 min), 05-01 (2 min), 03-01 (3 min), 04-01 (3 min)
 - Trend: stable
 
 ## Accumulated Context
@@ -87,6 +73,8 @@ Recent decisions affecting current work:
 - 03-01: Pure function extraction: applyDoorHardwareAutoPopulate and mutation functions exported for testing, hooks are thin wrappers
 - 03-01: Direct file imports in door-hardware-helpers.ts to avoid circular dependency through barrel
 - 03-01: Shared applyMutation helper in useDoorHardware centralizes recalc + VE cascade + timestamp
+- 04-01: DoorHardwareSubRow and DoorHardwarePanel defined inline in TakeoffView.tsx (not separate files)
+- 04-01: Hook called unconditionally in LineItemRow; isDoor flag controls rendering only
 
 ### Pending Todos
 
@@ -98,6 +86,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-04T05:59:46.332Z
-Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-ui-components/04-CONTEXT.md
+Last session: 2026-03-04T13:54:49Z
+Stopped at: Completed 04-01-PLAN.md
+Resume file: .planning/phases/04-ui-components/04-01-SUMMARY.md

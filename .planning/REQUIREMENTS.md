@@ -24,9 +24,9 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 - [x] **UI-01**: Default hardware auto-populates when door system type is first selected (only when doorHardware is empty)
 - [x] **UI-02**: Estimator can add/remove individual hardware items from the pre-filled defaults
-- [ ] **UI-03**: Compact sub-row appears below door line items showing selected hardware with quantities and subtotal
-- [ ] **UI-04**: Door hardware cost visible as a separate line in the expanded line item detail breakdown
-- [ ] **UI-05**: "Reset to Defaults" button restores the default hardware set for the current door type
+- [x] **UI-03**: Compact sub-row appears below door line items showing selected hardware with quantities and subtotal
+- [x] **UI-04**: Door hardware cost visible as a separate line in the expanded line item detail breakdown
+- [x] **UI-05**: "Reset to Defaults" button restores the default hardware set for the current door type
 
 ## v2 Requirements
 
@@ -65,9 +65,9 @@ Deferred to future release. Tracked but not in current roadmap.
 | CALC-03 | Phase 2 | Complete |
 | UI-01 | Phase 3 | Complete |
 | UI-02 | Phase 3 | Complete |
-| UI-03 | Phase 4 | Pending |
-| UI-04 | Phase 4 | Pending |
-| UI-05 | Phase 4 | Pending |
+| UI-03 | Phase 4 | Complete |
+| UI-04 | Phase 4 | Complete |
+| UI-05 | Phase 4 | Complete |
 
 **Coverage:**
 - v1 requirements: 12 total
