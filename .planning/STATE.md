@@ -1,29 +1,16 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-milestone_name: milestone
-status: in-progress
-stopped_at: Phase 03 context gathered
-last_updated: "2026-03-04T03:37:24.006Z"
-last_activity: 2026-03-03 -- Phase 5 gap closure executed (barrel export + migration fix)
-progress:
-  total_phases: 5
-  completed_phases: 3
-  total_plans: 4
-  completed_plans: 4
----
-
----
-gsd_state_version: 1.0
-milestone: v1.0
 milestone_name: Door Hardware Selection
 status: in-progress
-last_updated: "2026-03-04T00:35:03Z"
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-03-04T05:19:49Z"
+last_activity: 2026-03-03 -- Phase 3 Plan 01 executed (door hardware state & behavior)
 progress:
   total_phases: 5
-  completed_phases: 3
-  total_plans: 4
-  completed_plans: 4
+  completed_phases: 4
+  total_plans: 5
+  completed_plans: 5
 ---
 
 # Project State
@@ -33,23 +20,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-02)
 
 **Core value:** Estimators can accurately price door hardware per line item without bloating the takeoff layout
-**Current focus:** Phase 3: State & Behavior (next after Phase 5 gap closure)
+**Current focus:** Phase 4: UI Integration (next after Phase 3 state & behavior)
 
 ## Current Position
 
-Phase: 5 complete (of 5 total, execution order: 1 -> 2 -> 5 -> 3 -> 4)
+Phase: 3 complete (of 5 total, execution order: 1 -> 2 -> 5 -> 3 -> 4)
 Plan: 1 of 1 in current phase -- COMPLETE
-Status: Phase 5 complete, Phase 3 next
-Last activity: 2026-03-03 -- Phase 5 gap closure executed (barrel export + migration fix)
+Status: Phase 3 complete, Phase 4 next
+Last activity: 2026-03-03 -- Phase 3 Plan 01 executed (door hardware state & behavior)
 
 Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
+- Total plans completed: 5
 - Average duration: 3 min
-- Total execution time: 0.20 hours
+- Total execution time: 0.25 hours
 
 **By Phase:**
 
@@ -58,9 +45,10 @@ Progress: [██████████] 100%
 | 1 - Data Model & Migration | 2 | 6 min | 3 min |
 | 2 - Calculation Engine | 1 | 4 min | 4 min |
 | 5 - Integration Fixes | 1 | 2 min | 2 min |
+| 3 - State & Behavior | 1 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2 min), 01-02 (4 min), 02-01 (4 min), 05-01 (2 min)
+- Last 5 plans: 01-01 (2 min), 01-02 (4 min), 02-01 (4 min), 05-01 (2 min), 03-01 (3 min)
 - Trend: stable
 
 ## Accumulated Context
@@ -81,6 +69,9 @@ Recent decisions affecting current work:
 - 02-01: materialCost = baseMaterialCost + doorHardwareCost, keeping C-033 lineTotal formula unchanged
 - Audit: Phase 5 created for integration gap closure (barrel export + migration fix) before Phase 3
 - 05-01: No new decisions -- followed plan as specified
+- 03-01: Pure function extraction: applyDoorHardwareAutoPopulate and mutation functions exported for testing, hooks are thin wrappers
+- 03-01: Direct file imports in door-hardware-helpers.ts to avoid circular dependency through barrel
+- 03-01: Shared applyMutation helper in useDoorHardware centralizes recalc + VE cascade + timestamp
 
 ### Pending Todos
 
@@ -92,6 +83,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-04T03:37:24.004Z
-Stopped at: Phase 03 context gathered
-Resume file: .planning/phases/03-state-behavior/03-CONTEXT.md
+Last session: 2026-03-04T05:19:49Z
+Stopped at: Completed 03-01-PLAN.md
+Resume file: .planning/phases/03-state-behavior/03-01-SUMMARY.md
