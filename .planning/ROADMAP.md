@@ -51,10 +51,10 @@ Plans:
   3. User can edit which hardware items and quantities are in an existing template
   4. User can delete a template
   5. All template changes persist immediately (visible after page reload)
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] 07-01: Template management hooks and Settings UI
+- [ ] 07-01-PLAN.md — Template CRUD hook and Settings Templates tab UI
 
 ### Phase 8: Template Application in Edit Panel
 **Goal**: Users can apply a saved template to any door line item from the hardware editing panel
