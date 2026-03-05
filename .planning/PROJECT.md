@@ -1,12 +1,21 @@
-# ClearEstimate — Door Hardware Selection
+# ClearEstimate — Hardware Set Templates
 
 ## What This Is
 
-An enhancement to ClearEstimate's Takeoff view that adds door-specific hardware selection with per-item quantities, auto-populated defaults, and a compact sub-row display when a door system type (Swing, Sliding, Revolving, Entrance) is chosen.
+An enhancement to ClearEstimate that lets estimators save custom door hardware configurations as reusable templates in app-level settings, then apply them to door line items via a dropdown picker in the editing panel — eliminating repetitive hardware selection across similar doors.
 
 ## Core Value
 
-Estimators can accurately price door hardware per line item without bloating the takeoff layout — every door gets a complete, editable hardware breakdown that rolls into material cost.
+Estimators can define a hardware set once and apply it to any door line item instantly — no more re-selecting the same hardware combination for every door of the same type.
+
+## Current Milestone: v1.1 Hardware Set Templates
+
+**Goal:** Save custom door hardware sets as reusable templates and apply them to door line items via a dropdown in the edit panel.
+
+**Target features:**
+- Template CRUD in Settings view (create, rename, delete)
+- Template picker dropdown in door hardware editing panel
+- Applying a template replaces current hardware selection
 
 ## Requirements
 
@@ -33,8 +42,10 @@ Estimators can accurately price door hardware per line item without bloating the
 
 ### Active
 
+- [ ] Hardware set templates — save custom sets and apply to future doors (v1.1)
+- [ ] Template CRUD management in Settings view (v1.1)
+- [ ] Template picker dropdown in door hardware editing panel (v1.1)
 - [ ] Custom one-off hardware items (name + cost + qty) for unusual spec requirements
-- [ ] Hardware set templates — save custom sets and apply to future doors
 - [ ] Duplicate door line item copies hardware selections (deep copy)
 - [ ] Door hardware cost summary line in project running totals
 - [ ] Bulk hardware override across multiple door line items
@@ -85,4 +96,4 @@ Door hardware uses a per-item quantity model (`DoorHardwareEntry` with `hardware
 - **UI framework**: Tailwind CSS v4 (CSS-first), no component library — matches existing Takeoff styling
 
 ---
-*Last updated: 2026-03-04 after v1.0 milestone*
+*Last updated: 2026-03-04 after v1.1 milestone start*
