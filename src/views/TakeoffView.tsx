@@ -5,6 +5,7 @@ import { useLineItems, validateLineItem } from '@/hooks/use-line-items'
 import { useVEAlternates } from '@/hooks/use-ve-alternates'
 import { useAppStore } from '@/hooks/use-app-store'
 import { useDoorHardware } from '@/hooks/use-door-hardware'
+import { useHardwareTemplates } from '@/hooks/use-hardware-templates'
 import {
   calcRunningTotals,
   calcBenchmark,
@@ -12,10 +13,11 @@ import {
   shouldSuggestEquipment,
   isDoorSystemType,
   getDefaultDoorHardware,
+  applyTemplate,
 } from '@/calc'
 import { BenchmarkBadge } from '@/components/BenchmarkBadge'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
-import type { LineItem, AppSettings } from '@/types'
+import type { LineItem, AppSettings, HardwareSetTemplate } from '@/types'
 
 // ── Main TakeoffView ────────────────────────────────────────────
 
@@ -300,6 +302,14 @@ const LineItemRow = memo(function LineItemRow({
 }: LineItemRowProps) {
   // Hook must be called unconditionally (React rules); functions used by DoorHardwarePanel
   const { addDoorHardware, removeDoorHardware, updateDoorHardwareQty } = useDoorHardware(projectId, item.id)
+  const { templates } = useHardwareTemplates()
+
+  const handleApplyTemplate = useCallback((templateId: string) => {
+    const tmpl = templates.find(t => t.id === templateId)
+    if (!tmpl) return
+    const newHardware = applyTemplate(tmpl, settings.doorHardware)
+    onUpdate(item.id, { doorHardware: newHardware })
+  }, [templates, settings.doorHardware, onUpdate, item.id])
   const validation = validateLineItem(item)
   const systemType = settings.systemTypes.find(s => s.id === item.systemTypeId)
   const isDoor = isDoorSystemType(item.systemTypeId)
@@ -452,9 +462,11 @@ const LineItemRow = memo(function LineItemRow({
               <DoorHardwarePanel
                 item={item}
                 settings={settings}
+                templates={templates}
                 onAdd={addDoorHardware}
                 onRemove={removeDoorHardware}
                 onUpdateQty={updateDoorHardwareQty}
+                onApplyTemplate={handleApplyTemplate}
                 onReset={() => onUpdate(item.id, { doorHardware: getDefaultDoorHardware(item.systemTypeId, item.heightInches) })}
               />
             ) : (
@@ -593,16 +605,30 @@ function DoorHardwareSubRow({ item, settings }: DoorHardwareSubRowProps): React.
 interface DoorHardwarePanelProps {
   item: LineItem
   settings: AppSettings
+  templates: HardwareSetTemplate[]
   onAdd: (hardwareId: string) => void
   onRemove: (hardwareId: string) => void
   onUpdateQty: (hardwareId: string, quantity: number) => void
+  onApplyTemplate: (templateId: string) => void
   onReset: () => void
 }
 
-function DoorHardwarePanel({ item, settings, onAdd, onRemove, onUpdateQty, onReset }: DoorHardwarePanelProps): React.JSX.Element {
+function DoorHardwarePanel({ item, settings, templates, onAdd, onRemove, onUpdateQty, onApplyTemplate, onReset }: DoorHardwarePanelProps): React.JSX.Element {
   return (
     <div>
       <label className="text-xs font-medium text-gray-600">Door Hardware</label>
+      {templates.length > 0 && (
+        <select
+          value=""
+          onChange={e => { if (e.target.value) onApplyTemplate(e.target.value) }}
+          className="mt-1 w-full rounded border border-gray-200 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
+        >
+          <option value="" disabled>Apply Template...</option>
+          {templates.map(t => (
+            <option key={t.id} value={t.id}>{t.name} ({t.items.length} items)</option>
+          ))}
+        </select>
+      )}
       <div className="mt-1 space-y-1">
         {settings.doorHardware.map(hw => {
           const entry = item.doorHardware.find(e => e.hardwareId === hw.id)
