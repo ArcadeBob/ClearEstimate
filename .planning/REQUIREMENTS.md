@@ -15,7 +15,7 @@ Requirements for Custom Hardware & Bulk Apply milestone. Each maps to roadmap ph
 ### Custom Hardware Data
 
 - [ ] **CHW-01**: Project interface includes customHardware field (Hardware[] with chw- prefix IDs)
-- [ ] **CHW-02**: Schema migration v4→v5 adds customHardware: [] to each existing project
+- [ ] **CHW-02**: Schema migration v4->v5 adds customHardware: [] to each existing project
 - [ ] **CHW-03**: User can add a custom hardware item (name + unit cost) in Project Setup view
 - [ ] **CHW-04**: User can edit a custom hardware item's name and unit cost
 - [ ] **CHW-05**: User can delete a custom hardware item not referenced by any line item
@@ -57,27 +57,27 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| COPY-01 | — | Pending |
-| COPY-02 | — | Pending |
-| CHW-01 | — | Pending |
-| CHW-02 | — | Pending |
-| CHW-03 | — | Pending |
-| CHW-04 | — | Pending |
-| CHW-05 | — | Pending |
-| CHW-06 | — | Pending |
-| CHW-07 | — | Pending |
-| CHW-08 | — | Pending |
-| CHW-09 | — | Pending |
-| BULK-01 | — | Pending |
-| BULK-02 | — | Pending |
-| BULK-03 | — | Pending |
-| BULK-04 | — | Pending |
+| COPY-01 | Phase 9 | Pending |
+| COPY-02 | Phase 9 | Pending |
+| CHW-01 | Phase 10 | Pending |
+| CHW-02 | Phase 10 | Pending |
+| CHW-03 | Phase 11 | Pending |
+| CHW-04 | Phase 11 | Pending |
+| CHW-05 | Phase 11 | Pending |
+| CHW-06 | Phase 11 | Pending |
+| CHW-07 | Phase 12 | Pending |
+| CHW-08 | Phase 11 | Pending |
+| CHW-09 | Phase 12 | Pending |
+| BULK-01 | Phase 13 | Pending |
+| BULK-02 | Phase 13 | Pending |
+| BULK-03 | Phase 13 | Pending |
+| BULK-04 | Phase 13 | Pending |
 
 **Coverage:**
 - v1.2 requirements: 15 total
-- Mapped to phases: 0
-- Unmapped: 15
+- Mapped to phases: 15
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-04*
-*Last updated: 2026-03-04 after initial definition*
+*Last updated: 2026-03-04 after roadmap creation*
