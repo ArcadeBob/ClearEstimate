@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useSettings } from '@/hooks/use-settings'
+import { useHardwareTemplates } from '@/hooks/use-hardware-templates'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { formatCurrency } from '@/calc'
-import type { AppSettings } from '@/types'
+import type { AppSettings, Hardware, HardwareSetTemplate } from '@/types'
 
-type TabName = 'glass' | 'frames' | 'systems' | 'labor' | 'conditions' | 'hardware' | 'equipment'
+type TabName = 'glass' | 'frames' | 'systems' | 'labor' | 'conditions' | 'hardware' | 'equipment' | 'templates'
 
 const TABS: { key: TabName; label: string }[] = [
   { key: 'glass', label: 'Glass' },
@@ -14,21 +15,55 @@ const TABS: { key: TabName; label: string }[] = [
   { key: 'conditions', label: 'Conditions' },
   { key: 'hardware', label: 'Hardware' },
   { key: 'equipment', label: 'Equipment' },
+  { key: 'templates', label: 'Templates' },
 ]
 
 export function SettingsView() {
   const [activeTab, setActiveTab] = useState<TabName>('glass')
   const { settings, addItem, updateItem, deleteItem, updateLaborRate, getUsageCount } = useSettings()
+  const {
+    templates,
+    addTemplate,
+    renameTemplate,
+    deleteTemplate,
+    toggleTemplateItem,
+    updateTemplateItemQuantity,
+  } = useHardwareTemplates()
   const [deleteTarget, setDeleteTarget] = useState<{ tableName: keyof AppSettings; id: string; name: string } | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [expandedTemplateId, setExpandedTemplateId] = useState<string | null>(null)
 
   const handleDelete = () => {
     if (!deleteTarget) return
-    const result = deleteItem(deleteTarget.tableName, deleteTarget.id)
-    if (!result.success) {
-      setDeleteError(result.error ?? 'Cannot delete')
+    if (deleteTarget.tableName === 'hardwareTemplates') {
+      deleteTemplate(deleteTarget.id)
+      if (expandedTemplateId === deleteTarget.id) {
+        setExpandedTemplateId(null)
+      }
+    } else {
+      const result = deleteItem(deleteTarget.tableName, deleteTarget.id)
+      if (!result.success) {
+        setDeleteError(result.error ?? 'Cannot delete')
+      }
     }
     setDeleteTarget(null)
+  }
+
+  const handleAddTemplate = () => {
+    let name = 'New Template'
+    // If "New Template" already exists, increment: "New Template (2)", "New Template (3)", etc.
+    let attempt = addTemplate(name)
+    if (!attempt) {
+      let counter = 2
+      while (!attempt && counter <= 100) {
+        name = `New Template (${counter})`
+        attempt = addTemplate(name)
+        counter++
+      }
+    }
+    if (attempt) {
+      setExpandedTemplateId(attempt)
+    }
   }
 
   return (
@@ -162,6 +197,20 @@ export function SettingsView() {
             getUsage={(id) => getUsageCount('equipment', id)}
           />
         )}
+
+        {activeTab === 'templates' && (
+          <TemplatesTab
+            templates={templates}
+            doorHardwareCatalog={settings.doorHardware}
+            expandedTemplateId={expandedTemplateId}
+            onToggleExpand={(id) => setExpandedTemplateId(prev => prev === id ? null : id)}
+            onRename={renameTemplate}
+            onToggleItem={toggleTemplateItem}
+            onUpdateItemQty={updateTemplateItemQuantity}
+            onDelete={(id, name) => setDeleteTarget({ tableName: 'hardwareTemplates', id, name })}
+            onAdd={handleAddTemplate}
+          />
+        )}
       </div>
 
       <ConfirmDialog
@@ -171,6 +220,155 @@ export function SettingsView() {
         onConfirm={handleDelete}
         onCancel={() => setDeleteTarget(null)}
       />
+    </div>
+  )
+}
+
+// ── Templates Tab ─────────────────────────────────────────────────
+
+interface TemplatesTabProps {
+  templates: HardwareSetTemplate[]
+  doorHardwareCatalog: Hardware[]
+  expandedTemplateId: string | null
+  onToggleExpand: (id: string) => void
+  onRename: (id: string, newName: string) => boolean
+  onToggleItem: (templateId: string, hardwareId: string) => void
+  onUpdateItemQty: (templateId: string, hardwareId: string, quantity: number) => void
+  onDelete: (id: string, name: string) => void
+  onAdd: () => void
+}
+
+function TemplatesTab({
+  templates,
+  doorHardwareCatalog,
+  expandedTemplateId,
+  onToggleExpand,
+  onRename,
+  onToggleItem,
+  onUpdateItemQty,
+  onDelete,
+  onAdd,
+}: TemplatesTabProps) {
+  const [renameError, setRenameError] = useState<string | null>(null)
+
+  return (
+    <div>
+      {templates.length === 0 && (
+        <p className="py-4 text-sm text-gray-500">No templates yet. Create one to get started.</p>
+      )}
+
+      <div className="space-y-1">
+        {templates.map(tmpl => {
+          const isExpanded = expandedTemplateId === tmpl.id
+          return (
+            <div key={tmpl.id} className="rounded-lg border border-gray-200">
+              {/* Collapsed Row */}
+              <div
+                className="flex cursor-pointer items-center justify-between px-4 py-3 hover:bg-gray-50"
+                onClick={() => { onToggleExpand(tmpl.id); setRenameError(null) }}
+              >
+                <div className="flex items-center gap-3">
+                  <svg
+                    className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                  <span className="text-sm font-medium text-gray-900">{tmpl.name}</span>
+                  <span className="text-xs text-gray-400">
+                    {tmpl.items.length} item{tmpl.items.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                <button
+                  onClick={e => { e.stopPropagation(); onDelete(tmpl.id, tmpl.name) }}
+                  className="text-xs text-red-600 hover:text-red-800"
+                >
+                  Delete
+                </button>
+              </div>
+
+              {/* Expanded Area */}
+              {isExpanded && (
+                <div className="border-l-2 border-blue-200 bg-gray-50 px-6 py-4">
+                  {/* Inline Name Input */}
+                  <div className="mb-4">
+                    <label className="mb-1 block text-xs font-medium text-gray-600">Template Name</label>
+                    <input
+                      type="text"
+                      value={tmpl.name}
+                      onClick={e => e.stopPropagation()}
+                      onChange={e => {
+                        const success = onRename(tmpl.id, e.target.value)
+                        setRenameError(success ? null : 'Name must be unique and non-empty')
+                      }}
+                      onBlur={() => {
+                        // Re-validate on blur to clear transient errors
+                        if (tmpl.name.trim()) setRenameError(null)
+                      }}
+                      className="w-full max-w-xs rounded border border-gray-200 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
+                    />
+                    {renameError && (
+                      <p className="mt-1 text-xs text-red-600">{renameError}</p>
+                    )}
+                  </div>
+
+                  {/* Hardware Checkbox List */}
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-medium text-gray-600">Hardware Items</h4>
+                    {doorHardwareCatalog.map(hw => {
+                      const entry = tmpl.items.find(i => i.hardwareId === hw.id)
+                      const isChecked = !!entry
+                      return (
+                        <div key={hw.id} className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id={`${tmpl.id}-${hw.id}`}
+                            checked={isChecked}
+                            onChange={() => onToggleItem(tmpl.id, hw.id)}
+                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <label
+                            htmlFor={`${tmpl.id}-${hw.id}`}
+                            className="flex-1 text-sm text-gray-700"
+                          >
+                            {hw.name}
+                            <span className="ml-1 text-xs text-gray-400">({formatCurrency(hw.unitCost)})</span>
+                          </label>
+                          {isChecked && (
+                            <input
+                              type="number"
+                              min={1}
+                              step={1}
+                              value={entry.quantity}
+                              onChange={e => {
+                                const val = parseInt(e.target.value, 10)
+                                if (!isNaN(val)) {
+                                  onUpdateItemQty(tmpl.id, hw.id, val)
+                                }
+                              }}
+                              className="w-16 rounded border border-gray-200 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
+                            />
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      <button
+        onClick={onAdd}
+        className="mt-3 rounded-lg border border-dashed border-gray-300 px-4 py-2 text-sm text-gray-600 hover:border-gray-400 hover:text-gray-700"
+      >
+        + New Template
+      </button>
     </div>
   )
 }
