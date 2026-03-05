@@ -34,6 +34,7 @@ export function TakeoffView() {
     updateVEAlternate, deleteVEAlternate,
   } = useVEAlternates(id!)
   const { state } = useAppStore()
+  const { templates } = useHardwareTemplates()
 
   const project = getProject(id!)
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -109,6 +110,7 @@ export function TakeoffView() {
               key={item.id}
               item={item}
               settings={settings}
+              templates={templates}
               projectId={id!}
               isExpanded={expandedId === item.id}
               onToggle={handleToggle}
@@ -289,6 +291,7 @@ export function TakeoffView() {
 interface LineItemRowProps {
   item: LineItem
   settings: AppSettings
+  templates: HardwareSetTemplate[]
   projectId: string
   isExpanded: boolean
   onToggle: (id: string) => void
@@ -298,11 +301,10 @@ interface LineItemRowProps {
 }
 
 const LineItemRow = memo(function LineItemRow({
-  item, settings, projectId, isExpanded, onToggle, onUpdate, onDuplicate, onDelete,
+  item, settings, templates, projectId, isExpanded, onToggle, onUpdate, onDuplicate, onDelete,
 }: LineItemRowProps) {
   // Hook must be called unconditionally (React rules); functions used by DoorHardwarePanel
   const { addDoorHardware, removeDoorHardware, updateDoorHardwareQty } = useDoorHardware(projectId, item.id)
-  const { templates } = useHardwareTemplates()
 
   const handleApplyTemplate = useCallback((templateId: string) => {
     const tmpl = templates.find(t => t.id === templateId)

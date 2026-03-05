@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { v4 as uuidv4 } from 'uuid'
-import type { HardwareSetTemplate, DoorHardwareEntry } from '@/types'
+import type { AppState, HardwareSetTemplate, DoorHardwareEntry } from '@/types'
 import { useAppStore } from './use-app-store'
 
 // ── Pure mutation functions (exported for testing) ──────────────
@@ -105,6 +105,12 @@ export function applyUpdateTemplateItemQuantity(
 
 // ── Hook ────────────────────────────────────────────────────────
 
+/** Returns new AppState with hardwareTemplates replaced, or prev if templates is null. */
+function withTemplates(prev: AppState, templates: HardwareSetTemplate[] | null): AppState {
+  if (!templates) return prev
+  return { ...prev, settings: { ...prev.settings, hardwareTemplates: templates } }
+}
+
 export function useHardwareTemplates() {
   const { state, setState } = useAppStore()
 
@@ -117,13 +123,7 @@ export function useHardwareTemplates() {
         const result = applyAddTemplate(prev.settings.hardwareTemplates, name)
         if (!result) return prev
         newId = result.newId
-        return {
-          ...prev,
-          settings: {
-            ...prev.settings,
-            hardwareTemplates: result.templates,
-          },
-        }
+        return withTemplates(prev, result.templates)
       })
       return newId
     },
@@ -137,13 +137,7 @@ export function useHardwareTemplates() {
         const result = applyRenameTemplate(prev.settings.hardwareTemplates, id, newName)
         if (!result) return prev
         success = true
-        return {
-          ...prev,
-          settings: {
-            ...prev.settings,
-            hardwareTemplates: result,
-          },
-        }
+        return withTemplates(prev, result)
       })
       return success
     },
@@ -152,52 +146,29 @@ export function useHardwareTemplates() {
 
   const deleteTemplate = useCallback(
     (id: string): void => {
-      setState(prev => ({
-        ...prev,
-        settings: {
-          ...prev.settings,
-          hardwareTemplates: applyDeleteTemplate(prev.settings.hardwareTemplates, id),
-        },
-      }))
+      setState(prev =>
+        withTemplates(prev, applyDeleteTemplate(prev.settings.hardwareTemplates, id)),
+      )
     },
     [setState],
   )
 
   const toggleTemplateItem = useCallback(
     (templateId: string, hardwareId: string): void => {
-      setState(prev => {
-        const result = applyToggleTemplateItem(prev.settings.hardwareTemplates, templateId, hardwareId)
-        if (!result) return prev
-        return {
-          ...prev,
-          settings: {
-            ...prev.settings,
-            hardwareTemplates: result,
-          },
-        }
-      })
+      setState(prev =>
+        withTemplates(prev, applyToggleTemplateItem(prev.settings.hardwareTemplates, templateId, hardwareId)),
+      )
     },
     [setState],
   )
 
   const updateTemplateItemQuantity = useCallback(
     (templateId: string, hardwareId: string, quantity: number): void => {
-      setState(prev => {
-        const result = applyUpdateTemplateItemQuantity(
-          prev.settings.hardwareTemplates,
-          templateId,
-          hardwareId,
-          quantity,
-        )
-        if (!result) return prev
-        return {
-          ...prev,
-          settings: {
-            ...prev.settings,
-            hardwareTemplates: result,
-          },
-        }
-      })
+      setState(prev =>
+        withTemplates(prev, applyUpdateTemplateItemQuantity(
+          prev.settings.hardwareTemplates, templateId, hardwareId, quantity,
+        )),
+      )
     },
     [setState],
   )

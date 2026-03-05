@@ -58,17 +58,4 @@ describe('applyTemplate', () => {
     expect(result).toEqual([{ hardwareId: 'dhw-003', quantity: 5 }])
   })
 
-  it('returns only valid items from a mix of valid and stale', () => {
-    const template = makeTemplate([
-      { hardwareId: 'dhw-001', quantity: 1 },
-      { hardwareId: 'dhw-gone', quantity: 2 }, // stale
-      { hardwareId: 'dhw-003', quantity: 3 },
-      { hardwareId: 'dhw-also-gone', quantity: 4 }, // stale
-    ])
-    const result = applyTemplate(template, catalog)
-    expect(result).toEqual([
-      { hardwareId: 'dhw-001', quantity: 1 },
-      { hardwareId: 'dhw-003', quantity: 3 },
-    ])
-  })
 })

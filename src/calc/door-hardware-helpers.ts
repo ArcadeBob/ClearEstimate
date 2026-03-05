@@ -29,7 +29,6 @@ export function getDefaultDoorHardware(
         copy.quantity = suggested
       }
     }
-    // When heightInches <= 0, keep the static default quantity from DOOR_HARDWARE_DEFAULTS
     return copy
   })
 }
