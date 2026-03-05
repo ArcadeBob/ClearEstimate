@@ -2,7 +2,7 @@ import type { AppState } from '@/types'
 import { createDefaultAppState } from '@/data'
 
 const STORAGE_KEY = 'cgi_estimating_app_v1'
-const CURRENT_SCHEMA_VERSION = 3
+const CURRENT_SCHEMA_VERSION = 4
 
 export function loadAppState(): AppState {
   try {
@@ -58,6 +58,15 @@ function migrateState(parsed: Partial<AppState>): AppState {
       })),
     }))
     version = 3
+  }
+
+  // v3->v4: Add hardware set templates (additive, preserves existing settings)
+  if (version < 4) {
+    settings = {
+      ...settings,
+      hardwareTemplates: defaults.settings.hardwareTemplates,
+    }
+    version = 4
   }
 
   const migrated: AppState = {

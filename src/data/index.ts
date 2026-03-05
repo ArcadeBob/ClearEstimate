@@ -23,7 +23,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
 export function createDefaultAppState(): AppState {
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     projects: [],
     settings: DEFAULT_SETTINGS,
   }
