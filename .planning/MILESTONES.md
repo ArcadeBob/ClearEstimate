@@ -1,5 +1,31 @@
 # Milestones
 
+## v1.1 Hardware Set Templates (Shipped: 2026-03-04)
+
+**Phases:** 3 | **Plans:** 3 | **Tasks:** 6
+**Timeline:** 1 day (2026-03-04) | **Commits:** 12
+**Files modified:** 13 (code) | **LOC:** 6,281 TypeScript (total)
+**Code changes:** 936 insertions, 22 deletions
+**Tests:** 224/224 passing | **Verify-calc:** 46/46 assertions
+**Git range:** `feat(06-01)` to `feat(08-01)`
+
+**Key accomplishments:**
+1. HardwareSetTemplate type with 4 seed templates derived from existing door hardware defaults
+2. v3→v4 additive storage migration preserving all user data
+3. useHardwareTemplates hook with full CRUD (add, rename, delete, toggle items, update quantities)
+4. Templates tab in Settings with expand/collapse hardware editing UI
+5. Template picker dropdown in DoorHardwarePanel for instant template application
+6. Stale-reference filtering via applyTemplate pure function
+
+**Delivered:** Estimators can save custom door hardware configurations as reusable templates in Settings, then apply them to door line items via a dropdown picker — eliminating repetitive hardware selection across similar doors.
+
+**Archives:**
+- `milestones/v1.1-ROADMAP.md`
+- `milestones/v1.1-REQUIREMENTS.md`
+- `milestones/v1.1-MILESTONE-AUDIT.md`
+
+---
+
 ## v1.0 Door Hardware Selection (Shipped: 2026-03-04)
 
 **Phases:** 5 | **Plans:** 6 | **Tasks:** 15

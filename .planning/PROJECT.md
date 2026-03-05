@@ -1,21 +1,12 @@
-# ClearEstimate — Hardware Set Templates
+# ClearEstimate
 
 ## What This Is
 
-An enhancement to ClearEstimate that lets estimators save custom door hardware configurations as reusable templates in app-level settings, then apply them to door line items via a dropdown picker in the editing panel — eliminating repetitive hardware selection across similar doors.
+A glazing contractor estimation tool (React SPA) that handles material, labor, equipment, and markup computations for glass/aluminum system takeoffs. Now includes door hardware selection with auto-populated defaults per door type and reusable hardware set templates for fast application across similar doors.
 
 ## Core Value
 
-Estimators can define a hardware set once and apply it to any door line item instantly — no more re-selecting the same hardware combination for every door of the same type.
-
-## Current Milestone: v1.1 Hardware Set Templates
-
-**Goal:** Save custom door hardware sets as reusable templates and apply them to door line items via a dropdown in the edit panel.
-
-**Target features:**
-- Template CRUD in Settings view (create, rename, delete)
-- Template picker dropdown in door hardware editing panel
-- Applying a template replaces current hardware selection
+Accurate, fast glazing estimates that replace spreadsheet-based workflows — from takeoff to schedule of values.
 
 ## Requirements
 
@@ -39,12 +30,14 @@ Estimators can define a hardware set once and apply it to any door line item ins
 - ✓ Smart hinge count suggestion based on door height — v1.0
 - ✓ Cost breakdown sub-lines for door hardware — v1.0
 - ✓ Reset to Defaults button — v1.0
+- ✓ Hardware set templates — save custom sets and apply to future doors — v1.1
+- ✓ Template CRUD management in Settings view — v1.1
+- ✓ Template picker dropdown in door hardware editing panel — v1.1
+- ✓ Templates persist across sessions (localStorage v4 schema) — v1.1
+- ✓ Stale hardware reference filtering on template application — v1.1
 
 ### Active
 
-- [ ] Hardware set templates — save custom sets and apply to future doors (v1.1)
-- [ ] Template CRUD management in Settings view (v1.1)
-- [ ] Template picker dropdown in door hardware editing panel (v1.1)
 - [ ] Custom one-off hardware items (name + cost + qty) for unusual spec requirements
 - [ ] Duplicate door line item copies hardware selections (deep copy)
 - [ ] Door hardware cost summary line in project running totals
@@ -60,16 +53,19 @@ Estimators can define a hardware set once and apply it to any door line item ins
 - Door handing (left/right swing) — affects installation, not estimation cost
 - Automatic pricing updates from web — requires API infrastructure
 - Full door schedule report (Div 08) — specification document, not estimation output
+- Save as template from line item — manage templates in Settings only
+- Template sharing across browsers — no backend (localStorage is per-browser)
+- Template import/export — no file I/O infrastructure
 
 ## Context
 
-ClearEstimate is a glazing contractor estimation tool (React 19 + TypeScript 5 + Vite 6). Shipped v1.0 Door Hardware Selection with 5,344 LOC TypeScript across 49 modified files.
+ClearEstimate is a glazing contractor estimation tool (React 19 + TypeScript 5 + Vite 6). Shipped v1.0 Door Hardware Selection and v1.1 Hardware Set Templates. 6,281 LOC TypeScript.
 
 Tech stack: React 19, TypeScript 5 (strict), Vite 6, Tailwind CSS v4, React Router 7, localStorage persistence.
 
-Test suite: 182 unit tests (Vitest), 46 verify-calc assertions, 0 TypeScript errors. Schema at v3 with sequential migration pattern.
+Test suite: 224 unit tests (Vitest), 46 verify-calc assertions, 0 TypeScript errors. Schema at v4 with sequential migration pattern (v1→v2→v3→v4).
 
-Door hardware uses a per-item quantity model (`DoorHardwareEntry` with `hardwareId` + `quantity`) different from the existing flat hardware approach. Cost is computed in the orchestrator (`calcFullLineItem`) and added to `materialCost`, preserving the C-033 lineTotal invariant.
+Door hardware uses a per-item quantity model (`DoorHardwareEntry` with `hardwareId` + `quantity`). Hardware set templates (`HardwareSetTemplate`) allow saving and reusing configurations. Templates are managed in Settings and applied via dropdown in the edit panel. Cost flows through `calcFullLineItem` → `materialCost` (C-033).
 
 ## Key Decisions
 
@@ -86,14 +82,21 @@ Door hardware uses a per-item quantity model (`DoorHardwareEntry` with `hardware
 | Direct file imports to avoid circular barrel deps | door-hardware-helpers.ts imports directly from source files | ✓ Good |
 | Components inline in TakeoffView.tsx | DoorHardwareSubRow and DoorHardwarePanel are small and tightly coupled to view | ✓ Good |
 | Phase 5 inserted for integration gap closure | Audit found barrel export and migration completeness gaps before Phase 3 | ✓ Good |
+| Templates derive from DOOR_HARDWARE_DEFAULTS | Stay in sync with per-door-type default hardware | ✓ Good |
+| v3→v4 purely additive migration | Only adds hardwareTemplates — no existing data changes | ✓ Good |
+| Pure function mutation pattern for template CRUD | Testable without renderHook (matches use-door-hardware) | ✓ Good |
+| Expand/collapse list for template editing | Better UX than table for nested hardware items | ✓ Good |
+| Stateless select reset after template apply | No React state needed — value="" always resets dropdown | ✓ Good |
+| Stale refs silently filtered | Catalog changes rare; result still correct without errors | ✓ Good |
+| Template dropdown hidden when no templates | Clean UI for users who haven't created templates yet | ✓ Good |
 
 ## Constraints
 
 - **Existing calc pipeline**: Door hardware cost flows through `calcFullLineItem()` and rolls into `materialCost` (C-033)
 - **Type safety**: TypeScript strict mode with `noUncheckedIndexedAccess` — all types fully typed
 - **Seed data pattern**: Follows existing pattern in `src/data/` for door hardware seed data
-- **Schema migration**: v2->v3 additive migration, sequential version bump pattern
+- **Schema migration**: v1→v2→v3→v4 additive migration chain, sequential version bump pattern
 - **UI framework**: Tailwind CSS v4 (CSS-first), no component library — matches existing Takeoff styling
 
 ---
-*Last updated: 2026-03-04 after v1.1 milestone start*
+*Last updated: 2026-03-04 after v1.1 milestone*
