@@ -5,6 +5,7 @@ import { SEED_LABOR_RATES } from './seed-labor'
 import { SEED_CONDITIONS } from './seed-conditions'
 import { SEED_HARDWARE } from './seed-hardware'
 import { SEED_DOOR_HARDWARE, DOOR_HARDWARE_DEFAULTS } from './seed-door-hardware'
+import { SEED_HARDWARE_TEMPLATES } from './seed-hardware-templates'
 import { SEED_EQUIPMENT } from './seed-equipment'
 import { SEED_SYSTEM_TYPES } from './seed-systems'
 
@@ -15,6 +16,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   conditions: SEED_CONDITIONS,
   hardware: SEED_HARDWARE,
   doorHardware: SEED_DOOR_HARDWARE,
+  hardwareTemplates: SEED_HARDWARE_TEMPLATES,
   equipment: SEED_EQUIPMENT,
   systemTypes: SEED_SYSTEM_TYPES,
 }
@@ -28,6 +30,7 @@ export function createDefaultAppState(): AppState {
 }
 
 export { DOOR_HARDWARE_DEFAULTS }
+export { SEED_HARDWARE_TEMPLATES }
 
 /**
  * SPOT-CHECK VERIFICATION (48"×96" qty 1, Clear Tempered + Kawneer, Curtain Wall system):
