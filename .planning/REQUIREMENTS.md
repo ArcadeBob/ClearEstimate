@@ -46,20 +46,20 @@ Deferred to later milestones. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TMPL-01 | — | Pending |
-| TMPL-02 | — | Pending |
-| TMPL-03 | — | Pending |
-| TMPL-04 | — | Pending |
-| TMPL-05 | — | Pending |
-| APPL-01 | — | Pending |
-| APPL-02 | — | Pending |
-| APPL-03 | — | Pending |
+| TMPL-01 | Phase 7 | Pending |
+| TMPL-02 | Phase 7 | Pending |
+| TMPL-03 | Phase 7 | Pending |
+| TMPL-04 | Phase 7 | Pending |
+| TMPL-05 | Phase 6 | Pending |
+| APPL-01 | Phase 8 | Pending |
+| APPL-02 | Phase 8 | Pending |
+| APPL-03 | Phase 8 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 8 total
-- Mapped to phases: 0
-- Unmapped: 8 (pending roadmap creation)
+- Mapped to phases: 8
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-04*
-*Last updated: 2026-03-04 after initial definition*
+*Last updated: 2026-03-04 after roadmap creation*
