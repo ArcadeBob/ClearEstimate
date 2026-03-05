@@ -13,7 +13,7 @@ Requirements for hardware set templates milestone. Each maps to roadmap phases.
 - [ ] **TMPL-02**: User can rename an existing hardware template in Settings
 - [ ] **TMPL-03**: User can edit hardware items and quantities on an existing template in Settings
 - [ ] **TMPL-04**: User can delete a hardware template in Settings
-- [ ] **TMPL-05**: Templates persist in AppSettings across sessions (localStorage)
+- [x] **TMPL-05**: Templates persist in AppSettings across sessions (localStorage)
 
 ### Template Application
 
@@ -50,7 +50,7 @@ Deferred to later milestones. Tracked but not in current roadmap.
 | TMPL-02 | Phase 7 | Pending |
 | TMPL-03 | Phase 7 | Pending |
 | TMPL-04 | Phase 7 | Pending |
-| TMPL-05 | Phase 6 | Pending |
+| TMPL-05 | Phase 6 | Complete |
 | APPL-01 | Phase 8 | Pending |
 | APPL-02 | Phase 8 | Pending |
 | APPL-03 | Phase 8 | Pending |

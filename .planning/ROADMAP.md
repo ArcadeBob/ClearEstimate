@@ -22,7 +22,7 @@
 
 **Milestone Goal:** Estimators can define a hardware set once and apply it to any door line item instantly
 
-- [ ] **Phase 6: Template Data & Persistence** - Type definitions, storage schema, and persistence plumbing for hardware set templates
+- [x] **Phase 6: Template Data & Persistence** - Type definitions, storage schema, and persistence plumbing for hardware set templates
 - [ ] **Phase 7: Template CRUD in Settings** - Create, rename, edit, and delete hardware templates in the Settings view
 - [ ] **Phase 8: Template Application in Edit Panel** - Dropdown picker to apply templates to door line items in the hardware editing panel
 
@@ -39,7 +39,7 @@
 **Plans:** 1 plan
 
 Plans:
-- [ ] 06-01-PLAN.md — Template types, seed data, storage migration v3->v4
+- [x] 06-01-PLAN.md — Template types, seed data, storage migration v3->v4
 
 ### Phase 7: Template CRUD in Settings
 **Goal**: Users can fully manage hardware set templates from the Settings view
@@ -82,6 +82,6 @@ Phases execute in numeric order: 6 → 7 → 8
 | 5. Integration Fixes | v1.0 | 1/1 | Complete | 2026-03-03 |
 | 3. State & Behavior | v1.0 | 1/1 | Complete | 2026-03-03 |
 | 4. UI Components | v1.0 | 1/1 | Complete | 2026-03-04 |
-| 6. Template Data & Persistence | v1.1 | 0/1 | Not started | - |
+| 6. Template Data & Persistence | v1.1 | 1/1 | Complete | 2026-03-04 |
 | 7. Template CRUD in Settings | v1.1 | 0/1 | Not started | - |
 | 8. Template Application in Edit Panel | v1.1 | 0/1 | Not started | - |
