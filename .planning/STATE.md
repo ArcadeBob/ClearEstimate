@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: Hardware Set Templates
-status: archived
-stopped_at: Milestone v1.1 archived
-last_updated: "2026-03-05T05:20:00Z"
-last_activity: 2026-03-04 — Milestone v1.1 archived
+milestone: v1.2
+milestone_name: Custom Hardware & Bulk Apply
+status: defining-requirements
+stopped_at: Defining requirements
+last_updated: "2026-03-04T06:00:00Z"
+last_activity: 2026-03-04 — Milestone v1.2 started
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 3
-  completed_plans: 3
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
@@ -20,13 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Accurate, fast glazing estimates that replace spreadsheet-based workflows
-**Current focus:** Planning next milestone
+**Current focus:** Defining v1.2 requirements
 
 ## Current Position
 
-Milestone v1.1 Hardware Set Templates: SHIPPED
-All 8 phases (v1.0 + v1.1) complete.
-Next: `/gsd:new-milestone` for next version.
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-04 — Milestone v1.2 started
 
 ## Accumulated Context
 

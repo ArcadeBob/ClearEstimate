@@ -38,10 +38,14 @@ Accurate, fast glazing estimates that replace spreadsheet-based workflows — fr
 
 ### Active
 
-- [ ] Custom one-off hardware items (name + cost + qty) for unusual spec requirements
-- [ ] Duplicate door line item copies hardware selections (deep copy)
+- [ ] Project-level custom hardware items (name + cost) managed in Project Setup
+- [ ] Custom hardware selectable alongside catalog hardware in door hardware panel
+- [ ] Duplicate door line item deep-copies hardware selections
+- [ ] Bulk template application to multiple selected door line items
+
+### Deferred
+
 - [ ] Door hardware cost summary line in project running totals
-- [ ] Bulk hardware override across multiple door line items
 
 ### Out of Scope
 
@@ -56,6 +60,16 @@ Accurate, fast glazing estimates that replace spreadsheet-based workflows — fr
 - Save as template from line item — manage templates in Settings only
 - Template sharing across browsers — no backend (localStorage is per-browser)
 - Template import/export — no file I/O infrastructure
+
+## Current Milestone: v1.2 Custom Hardware & Bulk Apply
+
+**Goal:** Let estimators add project-specific custom hardware items, deep-copy hardware on line item duplication, and bulk-apply templates to multiple doors at once.
+
+**Target features:**
+- Project-level custom hardware list managed in Project Setup
+- Custom hardware items appear alongside catalog items in door hardware panel
+- Duplicating a door line item deep-copies its hardware selections
+- Multi-select door line items and apply a template to all selected
 
 ## Context
 
@@ -99,4 +113,4 @@ Door hardware uses a per-item quantity model (`DoorHardwareEntry` with `hardware
 - **UI framework**: Tailwind CSS v4 (CSS-first), no component library — matches existing Takeoff styling
 
 ---
-*Last updated: 2026-03-04 after v1.1 milestone*
+*Last updated: 2026-03-04 after v1.2 milestone start*
