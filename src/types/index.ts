@@ -113,6 +113,12 @@ export interface DoorHardwareEntry {
   quantity: number     // Per-door quantity (e.g., 3 hinges per door)
 }
 
+export interface HardwareSetTemplate {
+  id: string            // e.g., 'hst-001'
+  name: string          // e.g., 'Entrance System'
+  items: DoorHardwareEntry[]  // Hardware items with quantities
+}
+
 export interface Equipment {
   id: string
   name: string
@@ -128,6 +134,7 @@ export interface AppSettings {
   conditions: Condition[]
   hardware: Hardware[]
   doorHardware: Hardware[]   // Door hardware catalog (12 items, dhw-xxx IDs)
+  hardwareTemplates: HardwareSetTemplate[]  // Saved hardware set templates for quick application
   equipment: Equipment[]
   systemTypes: SystemType[]
 }
