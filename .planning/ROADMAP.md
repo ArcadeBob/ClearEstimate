@@ -65,10 +65,10 @@ Plans:
   2. Selecting a template replaces the line item's current hardware selection with the template's items and quantities
   3. User can modify individual hardware items after applying a template (template is a starting point, not locked)
   4. Material cost recalculates correctly after template application
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] 08-01: Template picker dropdown and apply behavior
+- [ ] 08-01-PLAN.md — Template picker dropdown and apply behavior
 
 ## Progress
 
