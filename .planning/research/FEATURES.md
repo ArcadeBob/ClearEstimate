@@ -1,197 +1,160 @@
-# Feature Research: Door Hardware in Glazing Estimation
+# Feature Landscape
 
-**Domain:** Commercial glazing estimation -- door hardware selection and pricing
-**Researched:** 2026-03-02
-**Confidence:** MEDIUM (based on competitor product descriptions, industry hardware specification standards, and domain knowledge of existing ClearEstimate codebase; no direct hands-on access to competitor tools)
+**Domain:** Glazing estimation tool — v1.2 custom hardware items, deep-copy duplication, bulk template application
+**Researched:** 2026-03-04
+**Confidence:** HIGH (features defined by codebase analysis of existing implementation gaps)
 
-## Feature Landscape
+## Table Stakes
 
-### Table Stakes (Users Expect These)
-
-Features estimators assume exist. Missing these = the door hardware feature is unusable.
+Features users expect. Missing = product feels incomplete.
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| Door hardware seed data by category | Estimators need a starting catalog of standard items (hinges, closers, handles, locks, panic devices, thresholds, weatherstrip, sweeps, pivots, auto-operators) -- without seed data, every door is manual entry | LOW | 12 items per PROJECT.md; follow existing `seed-hardware.ts` pattern. Each item needs: id, name, unitCost, category, defaultQtyPerDoor |
-| Per-item quantity per door | Doors need 3 hinges but 1 closer -- the existing flat `hardwareIds[]` with 1:1 quantity model (C-016) does not work for doors | MEDIUM | New data structure: `{ hardwareItemId, qtyPerDoor }` on a door hardware selection. Multiplied by line item `quantity` for total cost. This is the core model change. |
-| Default hardware sets per door type | When estimator selects Swing Door (sys-009), auto-populate hinges(3) + closer(1) + handle(1) + lock(1) + threshold(1) + weatherstrip(1). Different defaults for Sliding (sys-008) and Revolving (sys-007). Saves 2-3 minutes per door line item. | MEDIUM | Mapping from systemTypeId to array of `{ hardwareItemId, defaultQty }`. Entrance System (sys-006) also needs a default set. |
-| Add/remove items from defaults | Estimator must be able to deselect defaulted items (e.g., remove lock from an interior door) or add items not in the default set (e.g., add card reader to an exterior door) | LOW | UI concern: checkboxes or add/remove buttons on the sub-row. Defaults are a starting point, not locked. |
-| Hardware cost rolls into material cost | Consistent with existing calc pipeline (C-002, C-033). Door hardware cost = SUM(unitCost x qtyPerDoor x lineItem.quantity) added to materialCost. | LOW | Extend `calcMaterialCost()` in `material-calc.ts`. Must not break existing generic hardware path for non-door items. |
-| Sub-row UI for door hardware | The main takeoff row cannot fit hardware detail without breaking print layout. A collapsible sub-row below door line items shows selected hardware in compact format. | MEDIUM | Existing expandable row pattern (I-001) can be extended. Only visible for door system types. Must render compactly for printability. |
-| Custom one-off hardware items | Covers unusual specs (e.g., a specific mag-lock model or decorative pull at a quoted price) without bloating seed data. Estimator enters name + unit cost + quantity. | LOW | Stored on the line item, not in global settings. Simple name/cost/qty tuple. |
-| Hardware cost visible in line item detail | Estimator needs to see hardware subtotal within the line item breakdown (separate from glass and frame costs) to verify the number makes sense | LOW | Display-only: show hardware cost line in the expandable detail panel alongside glass cost, frame cost, labor, equipment |
+| Project-level custom hardware list (CRUD) | Estimators encounter specialty hardware on nearly every job — specific ADA operators, decorative pulls at quoted prices, project-specified closers. The 12-item seed catalog cannot cover all real projects. | Low | Add `customHardware: Hardware[]` to `Project` interface. CRUD in ProjectSetupView new section. Follows existing Settings hardware editing pattern. |
+| Custom hardware selectable in door hardware panel | If custom items exist but are not selectable alongside catalog items, the feature is invisible at the point of use. Estimators should not navigate away from takeoff to handle costs manually. | Low | Merge `settings.doorHardware` + `project.customHardware` into combined catalog for the door hardware add-item dropdown and for cost resolution in `calcFullLineItem`. |
+| Deep-copy doorHardware on line item duplication | Current `duplicateLineItem` does `{ ...item, id: uuidv4() }` — shallow copies `doorHardware` array. Editing hardware on the duplicate mutates the original's array entries via shared object references. This is a data integrity bug, not a feature request. | Low | Replace spread with `doorHardware: item.doorHardware.map(e => ({ ...e }))`. Same fix needed in `duplicateProject`. One-line change per location + regression tests. |
+| Bulk template apply to multiple selected doors | Estimators commonly have 10-30 identical doors on a project. Applying templates one-by-one is the primary UX pain point with the current template system. This is the natural completion of the template workflow. | Med | Requires: (1) multi-select UI for door line items, (2) template selection action, (3) batch recalc. No new calc logic — reuses existing `applyTemplate()` pure function. |
 
-### Differentiators (Competitive Advantage)
+## Differentiators
 
-Features that set ClearEstimate apart from spreadsheet workflows. Not required, but valued.
+Features that set product apart. Not expected, but valued.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| Smart quantity suggestion by door height | Industry standard: 2 hinges for doors up to 60", 3 for 61-90", 4 for 91-120". Auto-suggest hinge quantity based on `heightInches` saves mental math and reduces errors. | LOW | Simple conditional logic on `heightInches`. Suggestion only -- estimator can override. Only applies to hinges. |
-| Hardware set templates (saveable) | Let estimators save custom hardware sets (e.g., "Standard Interior Swing", "Secure Exterior with Card Reader") and apply them to future doors. Replicates the "assembly" concept from WinBidPro and On-Screen Takeoff. | MEDIUM | Stored in AppSettings alongside system types. A template is a named array of `{ hardwareItemId, qtyPerDoor }`. Different from defaults per door type -- these are user-created. |
-| Hardware cost summary in project totals | Show total door hardware cost as a distinct line in the running totals sidebar (I-006). Helps estimators validate that hardware is a reasonable percentage of material cost (industry rule of thumb: 15-25% of door slab cost). | LOW | Derived value from summing door hardware across all line items. Display-only in summary. |
-| Duplicate door line item copies hardware | When duplicating a door line item, the hardware selections (including custom items and overridden quantities) copy over. Saves re-entry for similar doors. | LOW | Extend existing duplicate logic. Deep-copy the door hardware array. |
-| Bulk hardware override | Select multiple door line items and apply a hardware change to all (e.g., "add card reader to all exterior swing doors"). Saves time on large projects with many similar doors. | HIGH | Multi-select UI + batch update logic. Powerful but complex. Defer to v2. |
+| Bulk apply confirmation dialog | Before applying template to N doors, show "Apply 'Entrance System' to 5 doors? This replaces existing hardware." Prevents accidental overwrite of customized hardware on 20 doors. | Low | Simple confirm dialog. High trust value for a destructive batch operation. |
+| Select all / select none toggle | In bulk mode, quickly toggle all door-type line items. Non-door items excluded automatically via `isDoorSystemType()`. | Low | Filter `lineItems`, toggle all matching IDs. Saves clicks on projects with many doors. |
+| Custom hardware in saved templates | When a template is saved from Settings, it can reference custom hardware IDs. When applied in the same project, custom items carry forward. Cross-project, stale custom refs are silently filtered (same as existing stale catalog ref filtering). | Low | No new filtering logic needed — `applyTemplate` already filters by catalog. Just ensure merged catalog is passed. |
+| Custom hardware cost validation hint | Yellow border when custom hardware `unitCost` is 0 or suspiciously high (> $5,000). Not blocking — just a visual hint to catch typos. | Low | CSS-only visual treatment on the cost input. No validation logic beyond display. |
 
-### Anti-Features (Commonly Requested, Often Problematic)
+## Anti-Features
 
-Features that seem good but create problems for ClearEstimate's scope and simplicity.
+Features to explicitly NOT build.
 
-| Feature | Why Requested | Why Problematic | Alternative |
-|---------|---------------|-----------------|-------------|
-| Manufacturer catalog integration | WinBidPro has real-time cloud catalogs with vendor pricing. Seems like a natural next step. | Massive scope: requires catalog ingestion, vendor API integration, pricing update infrastructure, and ongoing maintenance. ClearEstimate is a Phase 1 SPA with localStorage -- no backend. Vendor catalogs need server infrastructure. | Seed data with editable unit costs in Settings. Estimators update prices manually when they get new vendor quotes. This matches the existing pattern for glass types and frame systems. |
-| Hardware specification sheets / submittals | Estimators sometimes want to attach spec sheets to hardware selections for submittals. | Turns the estimation tool into a document management system. File storage needs a backend (not localStorage). Completely different product concern. | Note field on custom hardware items. Link to external spec sheets via description text. |
-| Hardware supplier/vendor tracking | Track which vendor supplies each hardware item, with purchase order generation. | This is procurement, not estimation. Different workflow, different users, different timing. Over-scoping a Phase 1 estimation tool. | Out of scope per PROJECT.md. Estimator just needs cost, not supply chain. |
-| Fire rating / code compliance validation | Auto-validate that selected hardware meets fire rating requirements for the door's location. | Requires building code database, jurisdiction-specific rules, and legal liability concerns. No estimation tool does this well -- it is the architect's/spec writer's responsibility. | Descriptive note field. Estimator can annotate "fire-rated" on hardware items as a reminder. |
-| Door handing (left/right swing) tracking | Track whether a door is left-hand or right-hand swing for hardware selection. | Handing affects installation, not estimation cost. A left-hand and right-hand closer cost the same. Adds complexity to the UI without affecting the bottom line. | Ignore for estimation purposes. Handing matters for ordering/scheduling, not cost estimation. |
-| Automatic pricing updates from web | Auto-fetch current hardware prices from vendor websites. | Requires web scraping or API integration with each vendor. Fragile, vendor-specific, needs a backend. Pricing changes are infrequent enough that manual updates suffice. | Manual price editing in Settings, same as glass and frame costs. |
-| Full door schedule report (Div 08 format) | Generate a CSI Division 08 formatted door/frame/hardware schedule. | This is a specification document, not an estimation output. Different format, different audience (architects vs. contractors), different level of detail. | Schedule of Values (SOV) already groups by system type. Hardware detail lives in the estimate, not a separate spec document. |
+| Anti-Feature | Why Avoid | What to Do Instead |
+|--------------|-----------|-------------------|
+| Global custom hardware catalog | Custom hardware is project-specific by nature. A "Specialty ADA Operator" on one job has a different price on the next. Global catalog creates stale pricing and false confidence. | Project-level `customHardware` only. If users want to reuse items, they duplicate the project (existing feature). |
+| Custom hardware IDs in global templates cross-project | Templates live in `settings.hardwareTemplates` (global). Custom hardware is project-scoped. A template referencing `chw-abc123` is meaningless in another project where that ID does not exist. | Templates can contain custom hardware entries within the originating project, but on apply in a different project context, missing custom IDs are silently filtered by existing `applyTemplate` stale-ref logic. |
+| Drag-and-drop reordering for bulk select | Over-engineered interaction for a checkbox list. Adds complexity, accessibility issues, no real value for "select then apply." | Simple checkboxes next to each door line item. Selection order does not matter for template application. |
+| Inline hardware editing during bulk apply | Applying a template to 15 doors should be uniform. Per-door modifications during bulk apply defeats the purpose and creates confusing UX. | Apply template in bulk, then edit individual doors that need tweaks. Two-step workflow is clearer. |
+| Custom hardware import/export | File I/O infrastructure does not exist. localStorage-only architecture (C-012). Would require file handling, format parsing, error handling for marginal value. | Manual entry. Custom hardware lists are typically 1-5 items per project. |
 
 ## Feature Dependencies
 
 ```
-[Per-item quantity model]
+Project-level custom hardware CRUD (ProjectSetupView)
     |
-    +--requires--> [Door hardware seed data]
+    +--> Custom hardware in door hardware panel dropdown (TakeoffView)
     |
-    +--requires--> [Door hardware type on LineItem]
+    +--> Custom hardware resolved in calcFullLineItem cost calc (calc pipeline)
     |
-    +--enables---> [Default hardware sets per door type]
-    |                  |
-    |                  +--enables---> [Add/remove from defaults]
-    |                  |
-    |                  +--enables---> [Smart qty suggestion by height]
-    |
-    +--enables---> [Custom one-off items]
-    |
-    +--enables---> [Hardware cost rolls into material cost]
-                       |
-                       +--enables---> [Hardware cost visible in detail]
-                       |
-                       +--enables---> [Hardware cost summary in totals]
+    +--> Schema migration v4 -> v5 (storage-service.ts)
 
-[Sub-row UI]
-    +--requires--> [Per-item quantity model]
-    +--requires--> [Existing expandable row (I-001)]
+Deep-copy fix (INDEPENDENT — no dependencies on other features)
+    |
+    +--> Fix in use-line-items.ts duplicateLineItem
+    |
+    +--> Fix in use-projects.ts duplicateProject
 
-[Hardware set templates]
-    +--requires--> [Default hardware sets per door type]
-    +--requires--> [Per-item quantity model]
-
-[Duplicate door copies hardware]
-    +--requires--> [Per-item quantity model]
-
-[Bulk hardware override]
-    +--requires--> [Per-item quantity model]
-    +--requires--> [Multi-select UI (does not exist yet)]
+Multi-select UI for door line items (TakeoffView)
+    |
+    +--> Bulk template apply action (reuses applyTemplate pure function)
+    |
+    +--> Bulk apply confirmation dialog (optional, adds safety)
 ```
 
-### Dependency Notes
+**Key dependency insight:** All three feature tracks are independent of each other. Deep-copy is a standalone bug fix. Custom hardware and bulk apply have zero mutual dependencies. All three can be developed in parallel or sequenced in any order.
 
-- **Per-item quantity model requires door hardware seed data:** The model needs items to reference. Seed data must exist first.
-- **Per-item quantity model requires a door hardware field on LineItem:** New TypeScript type needed on the `LineItem` interface (e.g., `doorHardware?: DoorHardwareSelection[]`). Triggers schema version bump (B-005).
-- **Default hardware sets require per-item quantity model:** Defaults are expressed as arrays of `{ hardwareItemId, qtyPerDoor }` -- the same structure as manual selections.
-- **Sub-row UI requires per-item quantity model:** The UI renders what the model holds. Build model first, then UI.
-- **Hardware set templates require default sets first:** Templates extend the defaults concept. Ship defaults first, templates are an enhancement.
-- **Bulk hardware override conflicts with Phase 1 scope:** Requires multi-select UI that does not exist. Defer entirely.
+**Ordering recommendation:** Deep-copy first (bug fix, smallest scope), then custom hardware (data model change, schema migration), then bulk apply (UI-heavy, benefits from stable data model).
 
-## MVP Definition
+## Detailed Feature Analysis
 
-### Launch With (v1 -- this milestone)
+### 1. Project-Level Custom Hardware
 
-Minimum viable door hardware feature -- what's needed so estimators can accurately price doors.
+**Data model change:**
+```typescript
+// Add to Project interface
+customHardware: Hardware[]
+// e.g., [{ id: 'chw-{uuid}', name: 'ADA Operator (Besam)', unitCost: 1500.00 }]
+```
 
-- [ ] **Door hardware seed data** (12 items across categories) -- foundation for everything else
-- [ ] **Per-item quantity model** on LineItem (`doorHardware: DoorHardwareSelection[]`) -- the core data model change
-- [ ] **Default hardware sets per door type** (Swing, Sliding, Revolving, Entrance) -- saves estimator time, biggest workflow improvement
-- [ ] **Add/remove from defaults** -- estimators must be able to customize
-- [ ] **Custom one-off hardware items** -- covers edge cases without seed data bloat
-- [ ] **Hardware cost in calcMaterialCost** -- the calculation must be correct
-- [ ] **Sub-row UI** for door line items -- hardware must be visible and editable
-- [ ] **Hardware cost visible in detail panel** -- estimator needs to verify numbers
+**Schema migration:** v4 to v5. Additive only — add `customHardware: []` to each existing project. Follows established sequential migration pattern (v1->v2->v3->v4->v5).
 
-### Add After Validation (v1.x)
+**CRUD location:** ProjectSetupView, new "Custom Hardware" section. Pattern: name input + cost input + add button, list with edit/delete. Matches existing Settings hardware editing UX patterns.
 
-Features to add once core door hardware is working and estimators confirm the workflow.
+**Catalog merging at point of use:** When the door hardware panel renders its "Add Hardware" dropdown or when `calcFullLineItem` resolves hardware costs, merge `settings.doorHardware` (12 catalog items, `dhw-` prefix) with `project.customHardware` (0-N custom items, `chw-` prefix). The merge is read-only at point of use. No deduplication needed since ID prefixes differ.
 
-- [ ] **Smart hinge quantity by door height** -- add when estimators report manually adjusting hinge counts frequently
-- [ ] **Hardware set templates** -- add when estimators start creating similar custom sets across projects
-- [ ] **Duplicate door copies hardware** -- add when estimators report re-entering hardware on similar doors
-- [ ] **Hardware cost summary in project totals** -- add when estimators ask for hardware cost visibility at project level
+**Deletion constraint:** Follows C-008 pattern — cannot delete a custom hardware item referenced by any line item's `doorHardware` array in the same project. Show "Used by N line items" error.
 
-### Future Consideration (v2+)
+**Calc impact:** Zero changes to formulas. Hardware cost is still `SUM(unitCost x perDoorQty x lineItem.quantity)` per C-002. The only change is where `unitCost` is looked up — merged catalog instead of `settings.doorHardware` alone.
 
-Features to defer until product-market fit is established.
+### 2. Deep-Copy on Line Item Duplication
 
-- [ ] **Bulk hardware override** -- needs multi-select UI; only valuable on large projects with 20+ doors
-- [ ] **Hardware grade/tier selection** -- Grade 1/2/3 pricing tiers; adds complexity for marginal value in estimation
+**Current bug in `use-line-items.ts` line 129:**
+```typescript
+const newItem: LineItem = { ...item, id: uuidv4() }
+```
+The `doorHardware` array contains objects (`{ hardwareId, quantity }`). Spread creates a new array reference but shares the inner objects. Mutating `newItem.doorHardware[0].quantity` changes the original.
 
-## Feature Prioritization Matrix
+**Same bug in `use-projects.ts` line 67:**
+```typescript
+return { ...li, id: newId }
+```
+Project duplication has identical shallow-copy issue for every line item's `doorHardware`.
 
-| Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| Door hardware seed data | HIGH | LOW | P1 |
-| Per-item quantity model | HIGH | MEDIUM | P1 |
-| Default hardware sets per door type | HIGH | MEDIUM | P1 |
-| Add/remove from defaults | HIGH | LOW | P1 |
-| Custom one-off hardware items | MEDIUM | LOW | P1 |
-| Hardware cost in calc pipeline | HIGH | LOW | P1 |
-| Sub-row UI | HIGH | MEDIUM | P1 |
-| Hardware cost in detail panel | MEDIUM | LOW | P1 |
-| Smart hinge qty by door height | MEDIUM | LOW | P2 |
-| Hardware set templates | MEDIUM | MEDIUM | P2 |
-| Duplicate door copies hardware | MEDIUM | LOW | P2 |
-| Hardware cost in project summary | LOW | LOW | P2 |
-| Bulk hardware override | MEDIUM | HIGH | P3 |
+**Note:** `conditionIds`, `equipmentIds`, and `hardwareIds` are `string[]` — safe with shallow copy since strings are primitives. Only `doorHardware` (array of objects) needs deep copy.
 
-**Priority key:**
-- P1: Must have for launch (this milestone)
-- P2: Should have, add when possible
-- P3: Nice to have, future consideration
+**Fix pattern:**
+```typescript
+doorHardware: item.doorHardware.map(e => ({ ...e }))
+```
 
-## Competitor Feature Analysis
+**Scope:** Two locations, one-line fix each, two unit tests proving mutation isolation.
 
-| Feature | WinBidPro (GDS) | BidUnity | On-Screen Takeoff | CRL Online | ClearEstimate Approach |
-|---------|-----------------|----------|-------------------|------------|----------------------|
-| Hardware catalog | Cloud vendor catalogs with real-time updates, discount multipliers per vendor | System configuration with pre-defined assemblies | Pre-built assemblies, reusable templates | Integrated CRL product catalog | Editable seed data in Settings. Manual price updates. Matches existing glass/frame pattern. |
-| Per-item quantities | Yes, via assembly components with spacing-based auto-count | Yes, built into system configuration | Yes, via assemblies with count formulas | Yes, within design tool | Per-item qty on door hardware selections. `qtyPerDoor x lineItem.quantity`. |
-| Default sets | Assembly templates per framing system | Pre-defined system rules | Typical Areas/Groups for reuse | Pre-configured for CRL products | Default hardware set per door system type (Swing/Sliding/Revolving/Entrance). |
-| Custom items | Parts list allows manual additions | Scope identification allows additions | Manual additions to assemblies | Limited to CRL catalog | Custom one-off items: name + cost + qty. Not stored globally. |
-| Hardware visibility | Parts list view, final parts report | Construction proposal includes hardware detail | Integrated into takeoff view | Quote package with hardware | Sub-row below door line items. Hardware cost in detail panel. |
-| Price management | Vendor multipliers, catalog-level pricing | Built into system config | Linked to cost databases | CRL catalog pricing | Unit cost editable per item in seed data. Simple and transparent. |
+### 3. Bulk Template Application
 
-## Implementation Considerations for ClearEstimate
+**Multi-select mechanism:** Add a "Bulk Apply" mode to TakeoffView. When activated:
+- Checkboxes appear next to each door-type line item (non-door items excluded via `isDoorSystemType()`)
+- A floating action bar shows: template dropdown + "Apply to N Selected" button
+- Selecting a template and confirming applies to all selected line items
 
-### Existing Code Impact
+**Selection state:** Ephemeral UI state (`useState<Set<string>>` in TakeoffView), not persisted to localStorage. Cleared on mode exit.
 
-1. **`src/types/index.ts`**: Add `DoorHardware` interface and `DoorHardwareSelection` type. Add optional `doorHardware?: DoorHardwareSelection[]` to `LineItem`. Add `DoorHardware[]` to `AppSettings`.
-2. **`src/data/seed-hardware.ts`**: Rename or extend. Existing generic hardware (setting blocks, glazing tape, etc.) stays. New door-specific hardware seed file needed.
-3. **`src/calc/material-calc.ts`**: Extend `calcMaterialCost()` to accept door hardware selections and compute `SUM(unitCost x qtyPerDoor x quantity)`. Existing generic hardware path unchanged.
-4. **`src/calc/line-total-calc.ts`**: `calcFullLineItem()` must pass door hardware data through to material calc.
-5. **`src/storage/storage-service.ts`**: Schema version bump (B-005) for new `doorHardware` field on LineItem and new settings array.
-6. **`src/views/TakeoffView.tsx`**: Sub-row rendering for door line items. Conditional on system type being a door type (sys-007, sys-008, sys-009, sys-006).
+**Apply logic:** Reuse existing `applyTemplate()` pure function from `src/calc/template-apply.ts`. For each selected line item:
+1. `applyTemplate(template, mergedCatalog)` returns new `DoorHardwareEntry[]`
+2. Update line item's `doorHardware` field
+3. Recalculate via `calcFullLineItem`
+4. Cascade VE alternates
 
-### Constraint Interactions
+**Batch update pattern:** Single `setState` call that maps over all line items, updating those in the selection set. Avoids N separate state updates and N re-renders. Pattern already established by `recalculateAll` in `use-line-items.ts`.
 
-- **C-002** (hardware cost formula): Door hardware uses a different formula (`unitCost x qtyPerDoor x quantity` vs existing `unitCost x quantity`). Both must coexist. New constraint needed.
-- **C-016** (hardware qty = lineItem.quantity): This is explicitly called a "Sprint 1 simplification." Door hardware supersedes this for door system types only. Generic hardware keeps C-016 behavior.
-- **C-033** (lineTotal = material + labor + equipment): Unchanged. Door hardware flows through materialCost.
-- **B-005** (schema versioning): Required. New field on LineItem.
-- **B-007** (schema migration): Migration must handle existing line items with door system types that lack doorHardware field (default to empty array).
+**Edge cases handled by existing code:**
+- Template with stale catalog refs: filtered by `applyTemplate` (existing behavior)
+- Template with custom hardware refs from another project: filtered (custom ID not in merged catalog)
+- Empty template: allowed, effectively clears hardware from selected doors (intentional workflow)
+
+## MVP Recommendation
+
+Prioritize:
+1. **Deep-copy fix** — Bug fix with zero UX change. Prevents data corruption when duplicating doors. Ship first, smallest scope.
+2. **Project-level custom hardware** — Unlocks real-world estimation. Without this, every non-standard door requires manual cost workarounds outside the tool.
+3. **Bulk template apply** — Quality-of-life feature that compounds the value of the template system shipped in v1.1.
+
+Defer:
+- **Bulk apply confirmation dialog** — Add after core bulk apply works. Can be a polish follow-up.
+- **Custom hardware cost validation** — Low priority. Estimators know their prices. Typos are rare and self-correcting when totals look wrong.
+- **Select all/none toggle** — Nice but not required for initial bulk apply. Can be added if users request it.
 
 ## Sources
 
-- [GDS Estimating / WinBidPro](https://www.gdsestimating.com) -- competitor analysis, assembly/catalog model
-- [WinBidPro v16 Documentation](https://docs.winbidpro.com/docs/intro/) -- parts list, component assemblies
-- [BidUnity](https://bidunity.com/) -- system configuration and proposal generation model
-- [CR Laurence Online Estimating](https://www.crlaurence.com/storefront-designs-office-partitions-construction-estimating-software) -- integrated catalog approach
-- [On Center Software / On-Screen Takeoff](https://www.oncenter.com/sub-contractor/doors-hardware/) -- pre-built assemblies, door hardware counting
-- [Construction Specifier: Door Hardware 101](https://www.constructionspecifier.com/door-hardware-101-the-basics-of-door-hardware-specifications/) -- hinge quantities by door height, hardware set composition
-- [Park Avenue Locks: How to Estimate Door Hardware Costs](https://www.parkavenuelocks.com/blog/post/how-to-estimate-door-hardware-costs) -- typical hardware package costs ($250-$1000+)
-- [Capital Build: Door/Frame/Hardware Schedule Guide](https://capitalbuildcon.com/door-frame-hardware-schedule-free-template/) -- Div 08 schedule structure, hardware categories
-- [Ferguson: Commercial Door Hardware Guide](https://www.fergusonhome.com/commercial-door-hardware-guide/a24120) -- hardware types, grading system
-- [Door Controls USA: Estimating for Contract Hardware](https://www.doorcontrolsusa.com/contract-hardware) -- industry standard: 5-10 hardware pieces per door opening
+- Codebase analysis: `src/hooks/use-line-items.ts` lines 125-145 (shallow-copy duplication bug)
+- Codebase analysis: `src/hooks/use-projects.ts` lines 57-90 (same shallow-copy issue in project duplication)
+- Codebase analysis: `src/calc/template-apply.ts` (stale ref filtering pattern reusable for custom hardware)
+- Codebase analysis: `src/hooks/use-door-hardware.ts` (pure mutation function pattern for CRUD)
+- Codebase analysis: `src/types/index.ts` (`DoorHardwareEntry` reference semantics, `Project` and `AppSettings` interfaces)
+- Codebase analysis: `src/data/seed-door-hardware.ts` (12-item catalog, `dhw-` ID prefix convention)
+- Codebase analysis: `src/views/TakeoffView.tsx` (no existing multi-select UI, checkbox pattern for conditions/equipment)
+- Existing patterns: Schema migration v1-v4 chain, Settings CRUD, C-008 deletion guard
 
 ---
-*Feature research for: Door hardware selection in commercial glazing estimation*
-*Researched: 2026-03-02*
+*Feature research for: v1.2 Custom Hardware & Bulk Apply milestone*
+*Researched: 2026-03-04*

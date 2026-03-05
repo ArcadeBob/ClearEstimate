@@ -1,369 +1,406 @@
-# Architecture Research
+# Architecture Patterns
 
-**Domain:** Door hardware selection for glazing estimation SPA
-**Researched:** 2026-03-02
-**Confidence:** HIGH
+**Domain:** Glazing estimation SPA - v1.2 custom hardware, deep-copy, bulk template apply
+**Researched:** 2026-03-04
+**Confidence:** HIGH (all findings from direct codebase analysis)
 
-## Standard Architecture
+## Recommended Architecture
 
-### System Overview
+Three features integrate into the existing architecture with minimal structural change. The codebase already has well-established patterns (pure mutation functions, hook-based state, calc orchestration) that each feature follows rather than inventing new ones.
 
-```
-EXISTING (unchanged)                         NEW (door hardware additions)
-===========================                  ===========================
+### Feature 1: Project-Level Custom Hardware Items
 
-Presentation Layer                           Presentation Layer
-┌──────────────┐                             ┌───────────────────────┐
-│ TakeoffView  │                             │ DoorHardwareSubRow    │
-│ LineItemRow  │──renders below door items──>│  (compact sub-row)    │
-│  (expanded)  │                             │ DoorHardwareEditor    │
-│  Hardware[]  │                             │  (add/remove/custom)  │
-└──────┬───────┘                             └───────────┬───────────┘
-       │ calls                                           │ calls
-State Layer                                  State Layer
-┌──────────────┐                             ┌───────────────────────┐
-│ useLineItems │                             │ useDoorHardware       │
-│  updateItem  │<───delegates persistence───>│  (add/remove/toggle   │
-│  addItem     │                             │   custom items, auto- │
-└──────┬───────┘                             │   populate defaults)  │
-       │ calls                               └───────────┬───────────┘
-Calc Layer                                               │ calls
-┌──────────────┐                             ┌───────────────────────┐
-│ line-total-  │──calls──>                   │ door-hardware-calc.ts │
-│  calc.ts     │                             │  calcDoorHardwareCost │
-│ material-    │<──returns number──           │  getDoorDefaults      │
-│  calc.ts     │                             └───────────────────────┘
-└──────┬───────┘
-       │ reads
-Data Layer
-┌──────────────────────────────────────────────────────────┐
-│ types/index.ts  ← DoorHardwareItem, DoorHardwareEntry   │
-│ data/seed-door-hardware.ts  ← 12 door hardware items    │
-│ data/door-defaults.ts  ← default sets per door type     │
-│ storage-service.ts  ← schema v2→v3 migration            │
-└──────────────────────────────────────────────────────────┘
+**Data Model Change:**
+
+Add `customHardware: Hardware[]` to the `Project` interface. These are project-scoped items that supplement the global `settings.doorHardware` catalog.
+
+```typescript
+// In src/types/index.ts - ADD to Project interface
+export interface Project {
+  // ... existing fields ...
+  customHardware: Hardware[]  // Project-specific hardware items
+}
 ```
 
-### Component Responsibilities
+**Why project-level, not settings-level:** Custom hardware is project-specific (a specialty closer for one job, not all jobs). Keeping it on `Project` avoids polluting the global catalog and matches the domain intent: "this project needs an unusual item."
+
+**ID prefix convention:** Use `chw-` prefix (custom hardware) to distinguish from global `dhw-` IDs. This prevents collisions and makes debugging easier. Generate with `uuidv4()` like all other IDs.
+
+**Merged catalog pattern:** When the DoorHardwarePanel needs the full list of available hardware, merge at the point of use:
+
+```typescript
+// Pure function - testable, no hook dependency
+export function getMergedHardwareCatalog(
+  globalCatalog: Hardware[],
+  customHardware: Hardware[],
+): Hardware[] {
+  return [...globalCatalog, ...customHardware]
+}
+```
+
+This merged list is passed to:
+- `DoorHardwarePanel` (for checkbox list rendering)
+- `calcDoorHardwareCost` (for price lookup)
+- `applyTemplate` (for stale ref filtering)
+- `applyAddDoorHardware` (for catalog validation)
+
+**Calc integration:** `calcDoorHardwareCost` already takes `doorHardwareCatalog: Hardware[]` as a parameter. Pass the merged catalog instead of just `settings.doorHardware`. No changes to the calc function itself.
+
+**calcFullLineItem change:** The orchestrator currently hardcodes `settings.doorHardware` on line 52. It needs the project's `customHardware` too. Add `customHardware: Hardware[] = []` as an optional parameter:
+
+```typescript
+export function calcFullLineItem(
+  lineItem: LineItem,
+  settings: AppSettings,
+  prevailingWage: boolean,
+  pwBaseRate?: number,
+  pwFringeRate?: number,
+  customHardware: Hardware[] = [],  // NEW - project-level custom items
+): LineItem {
+  // ... existing code ...
+  const doorHardwareCatalog = [...settings.doorHardware, ...customHardware]
+  const doorHardwareCost = calcDoorHardwareCost(
+    lineItem.doorHardware, doorHardwareCatalog, lineItem.quantity,
+  )
+  // ... rest unchanged ...
+}
+```
+
+This is a pure additive change -- existing callers pass nothing and behavior is unchanged.
+
+**Hook for CRUD:** New `useCustomHardware(projectId)` hook following the exact pattern of `useDoorHardware`:
+
+```typescript
+// Pure mutation functions (exported for testing)
+export function applyAddCustomHardware(
+  customHardware: Hardware[], name: string, unitCost: number
+): { items: Hardware[]; newId: string } | null
+
+export function applyUpdateCustomHardware(
+  customHardware: Hardware[], id: string, updates: Partial<Hardware>
+): Hardware[] | null
+
+export function applyDeleteCustomHardware(
+  customHardware: Hardware[], id: string
+): Hardware[]
+```
+
+**Delete cascade:** When a custom hardware item is deleted, any `DoorHardwareEntry` in the project's line items referencing that ID becomes orphaned. Use active cleanup (strip references from all line items and recalculate) because:
+- It matches the existing VE alternate delete cascade pattern
+- `calcDoorHardwareCost` already skips missing IDs (passive safety), but leaving invisible orphan entries in doorHardware arrays is confusing if inspected
+- The UI would show a broken checkbox entry otherwise
+
+**UI location:** New "Custom Hardware" `Section` in `ProjectSetupView`, after Overhead & Profit. Simple add/edit/delete list matching the existing `Section`/`Field` component pattern. No new components needed.
+
+**Schema migration:** v4 -> v5. Additive: add `customHardware: []` to each project. Sequential pattern continues.
+
+### Feature 2: Deep-Copy on Line Item Duplication
+
+**Current behavior:** `duplicateLineItem` in `use-line-items.ts` line 129 does `{ ...item, id: uuidv4() }`. The spread is shallow -- `doorHardware`, `conditionIds`, `equipmentIds`, and `hardwareIds` arrays are shared by reference.
+
+**In practice this is not currently a bug** because the hooks always create new arrays via immutable update patterns. But it is semantically wrong and fragile -- a future optimization or direct state manipulation would break silently.
+
+**Fix:** Extract `deepCopyLineItem` as a testable pure function:
+
+```typescript
+export function deepCopyLineItem(source: LineItem): LineItem {
+  return {
+    ...source,
+    id: uuidv4(),
+    doorHardware: source.doorHardware.map(e => ({ ...e })),
+    conditionIds: [...source.conditionIds],
+    equipmentIds: [...source.equipmentIds],
+    hardwareIds: [...source.hardwareIds],
+  }
+}
+```
+
+**Why copy all arrays, not just doorHardware:** Consistency. All array fields should be independent copies. The cost is trivial (a few small arrays) and it eliminates an entire class of potential bugs.
+
+**No schema migration needed.** This is a behavior fix, not a data model change.
+
+### Feature 3: Bulk Template Application
+
+**Selection state:** Local `useState<Set<string>>` in `TakeoffView`. Not persisted -- selection is transient UI state.
+
+```typescript
+const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+```
+
+**Filtering:** Only door-type line items are selectable. Non-door items show no checkbox. Use existing `isDoorSystemType()` filter.
+
+**Batch apply pure function:**
+
+```typescript
+// In src/calc/template-apply.ts
+export function applyTemplateBulk(
+  lineItems: LineItem[],
+  selectedIds: Set<string>,
+  template: HardwareSetTemplate,
+  catalog: Hardware[],
+): LineItem[] {
+  const validEntries = applyTemplate(template, catalog)
+  return lineItems.map(li =>
+    selectedIds.has(li.id)
+      ? { ...li, doorHardware: validEntries.map(e => ({ ...e })) }
+      : li
+  )
+}
+```
+
+Each selected line item gets an independent copy of the template entries (not shared references).
+
+**Hook integration:** Add `bulkApplyTemplate` to `useLineItems`:
+
+```typescript
+const bulkApplyTemplate = useCallback(
+  (selectedIds: Set<string>, templateId: string) => {
+    setState(prev => ({
+      ...prev,
+      projects: prev.projects.map(p => {
+        if (p.id !== projectId) return p
+        const template = prev.settings.hardwareTemplates.find(t => t.id === templateId)
+        if (!template) return p
+        const catalog = [...prev.settings.doorHardware, ...(p.customHardware ?? [])]
+        const newLineItems = applyTemplateBulk(p.lineItems, selectedIds, template, catalog)
+          .map(li => {
+            if (!selectedIds.has(li.id)) return li
+            if (validateLineItem(li).isValid) {
+              return calcFullLineItem(li, prev.settings, p.prevailingWage,
+                p.pwBaseRate, p.pwFringeRate, p.customHardware)
+            }
+            return li
+          })
+        return {
+          ...p,
+          lineItems: newLineItems,
+          veAlternates: cascadeVEAlternates(p.veAlternates, newLineItems),
+          timestamps: touchTimestamp(p.timestamps),
+        }
+      }),
+    }))
+  },
+  [projectId, setState],
+)
+```
+
+**UI components:**
+
+1. **Selection checkbox** -- Added to `LineItemRow` collapsed view, only for door items. Controlled by parent via `isSelected` and `onSelectToggle` props.
+2. **Bulk action bar** -- Appears above the line item list when `selectedIds.size > 0`. Contains template dropdown + "Apply" button + "Clear Selection" link. Conditionally rendered in `TakeoffView`.
+3. **Select All Doors** -- Convenience toggle in the bulk action bar.
+
+**Performance:** `LineItemRow` is already `memo`-wrapped. Adding `isSelected: boolean` as a prop means only toggled rows re-render. The bulk apply triggers recalc only for selected items.
+
+### Component Boundaries
 
 | Component | Responsibility | Communicates With |
-|-----------|----------------|-------------------|
-| `DoorHardwareSubRow` | Renders compact hardware summary below door line items; shows item names, quantities, and subtotal | `LineItemRow` (parent), `useDoorHardware` (state) |
-| `DoorHardwareEditor` | Full editing UI for door hardware: toggle items, adjust per-item qty, add custom items | `DoorHardwareSubRow` (parent), `useDoorHardware` (state) |
-| `useDoorHardware` hook | CRUD for door hardware entries on a line item; auto-populate defaults on system type change; custom item management | `useLineItems` (delegates state writes), `door-hardware-calc` (cost computation) |
-| `door-hardware-calc.ts` | Pure function: `calcDoorHardwareCost(entries, doorQty)` returns total door hardware cost | Called by `calcFullLineItem` via `material-calc` |
-| `seed-door-hardware.ts` | 12 door hardware items with id, name, unitCost, defaultQtyPerDoor | Read by `useDoorHardware` for catalog |
-| `door-defaults.ts` | Maps door system type IDs to default hardware item sets | Read by `useDoorHardware` on system type selection |
+|-----------|---------------|-------------------|
+| `ProjectSetupView` (modified) | Custom hardware CRUD UI via new Section | `useCustomHardware` hook |
+| `useCustomHardware` (new) | Project-level hardware state mutations | `useAppStore` (setState) |
+| `TakeoffView` (modified) | Selection state, bulk action bar rendering | `useLineItems.bulkApplyTemplate` |
+| `LineItemRow` (modified) | Selection checkbox prop, receives merged catalog | `DoorHardwarePanel` via props |
+| `DoorHardwarePanel` (modified) | Shows merged catalog (global + custom) in checklist | Receives merged catalog via props |
+| `calcFullLineItem` (modified) | Accepts optional customHardware param | `calcDoorHardwareCost` with merged catalog |
+| `applyTemplateBulk` (new) | Batch template application pure function | `applyTemplate` (existing) |
+| `deepCopyLineItem` (new) | Safe line item duplication pure function | Called by `useLineItems.duplicateLineItem` |
+| `getMergedHardwareCatalog` (new) | Merge global + project catalogs pure function | Called at hook/component boundary |
+| `storage-service` (modified) | v4->v5 migration | Adds `customHardware: []` to projects |
 
-## Recommended Project Structure
+### Data Flow
 
+**Custom hardware creation flow:**
 ```
-src/
-├── types/
-│   └── index.ts               # ADD: DoorHardwareItem, DoorHardwareEntry
-├── data/
-│   ├── seed-hardware.ts        # UNCHANGED: existing glazing hardware (8 items)
-│   ├── seed-door-hardware.ts   # NEW: 12 door-specific hardware items
-│   ├── door-defaults.ts        # NEW: default hardware sets per door type
-│   └── index.ts                # ADD: exports for new seed data
-├── calc/
-│   ├── material-calc.ts        # MODIFY: accept door hardware cost
-│   ├── door-hardware-calc.ts   # NEW: calcDoorHardwareCost()
-│   ├── line-total-calc.ts      # MODIFY: pass door hardware into material calc
-│   └── index.ts                # ADD: export door-hardware-calc
-├── hooks/
-│   ├── use-line-items.ts       # MODIFY: auto-populate defaults on door system select
-│   └── use-door-hardware.ts    # NEW: door hardware CRUD operations
-├── components/
-│   ├── DoorHardwareSubRow.tsx   # NEW: compact sub-row display
-│   └── DoorHardwareEditor.tsx   # NEW: editing modal/panel
-├── views/
-│   └── TakeoffView.tsx          # MODIFY: render sub-row below door line items
-└── storage/
-    └── storage-service.ts       # MODIFY: v2→v3 migration
+ProjectSetupView
+  -> useCustomHardware.addCustomHardware(name, unitCost)
+    -> setState: project.customHardware = [...prev, newItem]
+      -> auto-persist (500ms debounce)
 ```
 
-### Structure Rationale
+**Custom hardware in calc flow:**
+```
+useLineItems.updateLineItem / useDoorHardware.applyMutation
+  -> calcFullLineItem(li, settings, pw, pwBase, pwFringe, project.customHardware)
+    -> mergedCatalog = [...settings.doorHardware, ...customHardware]
+    -> calcDoorHardwareCost(li.doorHardware, mergedCatalog, li.quantity)
+```
 
-- **`seed-door-hardware.ts` separate from `seed-hardware.ts`:** The existing 8 glazing hardware items (setting blocks, glazing tape, etc.) serve non-door line items. Door hardware is a fundamentally different catalog. Keeping them separate avoids polluting the existing hardware checklist for curtain wall, storefront, etc.
-- **`door-defaults.ts` as its own file:** Default-set mappings are configuration, not calculation. Separating from calc keeps the calc module pure and the defaults easy to edit.
-- **`use-door-hardware.ts` separate from `use-line-items.ts`:** Door hardware operations (toggle item, adjust per-item qty, add custom) are complex enough to warrant their own hook. The hook delegates state persistence through the existing `useLineItems.updateLineItem()` pattern.
+**Bulk apply flow:**
+```
+TakeoffView: user selects door items via checkboxes
+  -> selects template from bulk action bar dropdown
+  -> calls bulkApplyTemplate(selectedIds, templateId)
+    -> applyTemplateBulk creates new doorHardware for each selected item
+    -> calcFullLineItem recalculates each modified item
+    -> cascadeVEAlternates updates linked VEs
+    -> selectedIds cleared after apply
+```
 
-## Architectural Patterns
+**Duplicate flow (fixed):**
+```
+LineItemRow "Dup" button
+  -> useLineItems.duplicateLineItem(itemId)
+    -> deepCopyLineItem(item) produces independent copy with new id
+    -> new item appended to project.lineItems
+```
 
-### Pattern 1: Per-Item Quantity on Door Hardware
+## Patterns to Follow
 
-**What:** Each door hardware entry stores `itemQty` (e.g., 3 hinges per door). Total cost = `unitCost * itemQty * lineItem.quantity`.
+### Pattern 1: Pure Mutation Function + Hook Wrapper
+**What:** Extract state mutation logic as exported pure functions. Hook wraps with setState.
+**When:** Any new state operation (custom hardware CRUD, bulk apply).
+**Why:** Enables unit testing without renderHook. Every existing hook in this codebase follows this pattern.
 
-**When to use:** Always for door hardware. This replaces the existing flat `hardwareIds: string[]` model (C-016) which assumes qty=1 per item per door.
-
-**Trade-offs:** Adds complexity to the data model (array of objects vs. array of strings), but accurately models reality where a single door needs 3 hinges, 1 closer, 1 handle.
-
-**Example:**
 ```typescript
-// New type on LineItem
-interface DoorHardwareEntry {
-  doorHardwareId: string  // FK to DoorHardwareItem catalog
-  itemQty: number         // e.g., 3 for hinges
-}
+// Pure function (testable)
+export function applyAddCustomHardware(
+  customHardware: Hardware[], name: string, unitCost: number
+): { items: Hardware[]; newId: string } | null { ... }
 
-// Custom one-off items (no catalog reference)
-interface CustomDoorHardware {
-  id: string              // generated UUID
-  name: string
-  unitCost: number
-  itemQty: number
-}
-
-// On LineItem — new fields
-interface LineItem {
-  // ...existing fields...
-  doorHardware: DoorHardwareEntry[]
-  customDoorHardware: CustomDoorHardware[]
-}
-
-// Calculation
-function calcDoorHardwareCost(
-  entries: DoorHardwareEntry[],
-  customItems: CustomDoorHardware[],
-  catalog: DoorHardwareItem[],
-  doorQuantity: number,
-): number {
-  const catalogCost = entries.reduce((sum, e) => {
-    const item = catalog.find(c => c.id === e.doorHardwareId)
-    if (!item) return sum
-    return sum + item.unitCost * e.itemQty * doorQuantity
-  }, 0)
-  const customCost = customItems.reduce((sum, c) => {
-    return sum + c.unitCost * c.itemQty * doorQuantity
-  }, 0)
-  return Math.round((catalogCost + customCost) * 100) / 100
-}
+// Hook wraps it
+const addCustomHardware = useCallback((name: string, unitCost: number) => {
+  setState(prev => {
+    const project = prev.projects.find(p => p.id === projectId)
+    if (!project) return prev
+    const result = applyAddCustomHardware(project.customHardware, name, unitCost)
+    if (!result) return prev
+    return { ...prev, projects: prev.projects.map(p =>
+      p.id === projectId ? { ...p, customHardware: result.items, timestamps: touchTimestamp(p.timestamps) } : p
+    )}
+  })
+}, [projectId, setState])
 ```
 
-### Pattern 2: Auto-Populate Defaults on System Type Change
+### Pattern 2: Merged Catalog at Point of Use
+**What:** Combine global + project catalogs only where needed, never store merged.
+**When:** Rendering DoorHardwarePanel, calculating costs, validating hardware IDs.
+**Why:** Single source of truth stays clean. Merge is cheap (12 + ~5 items). Avoids sync bugs from duplicated state.
 
-**What:** When estimator selects a door system type (sys-007, sys-008, sys-009), the hook auto-populates `doorHardware[]` with the default set for that door type. Estimator can then add/remove items.
+### Pattern 3: Prop-Driven Selection (No Shared Context)
+**What:** Selection state lives in TakeoffView as local useState, passed to LineItemRow as boolean prop.
+**When:** Bulk operations UI.
+**Why:** Selection is transient. No reason to put it in AppState or a new context. Memo still works because boolean prop comparison is cheap.
 
-**When to use:** On system type change when the new type is a door type AND `doorHardware` is empty (first selection) or the system type category changed (e.g., Swing to Sliding).
+## Anti-Patterns to Avoid
 
-**Trade-offs:** Auto-populate saves time (most doors need the same items), but must not overwrite manual edits if the estimator has already customized the set. The rule: only auto-populate when switching to a door type from a non-door type, or when doorHardware is empty.
+### Anti-Pattern 1: Storing Merged Catalog
+**What:** Creating a `mergedDoorHardware` field on AppSettings or Project.
+**Why bad:** Two sources of truth. Must sync on every custom hardware change. Bugs when they drift.
+**Instead:** Merge at point of use with `getMergedHardwareCatalog()`.
 
-**Example:**
-```typescript
-// door-defaults.ts
-const DOOR_HARDWARE_DEFAULTS: Record<string, { doorHardwareId: string; itemQty: number }[]> = {
-  'sys-009': [ // Swing Door
-    { doorHardwareId: 'dhw-001', itemQty: 3 },  // Hinges (3 per door)
-    { doorHardwareId: 'dhw-002', itemQty: 1 },  // Closer
-    { doorHardwareId: 'dhw-003', itemQty: 1 },  // Handle/Pull
-    { doorHardwareId: 'dhw-004', itemQty: 1 },  // Lock/Cylinder
-    { doorHardwareId: 'dhw-007', itemQty: 1 },  // Threshold
-    { doorHardwareId: 'dhw-008', itemQty: 1 },  // Weatherstrip
-  ],
-  'sys-008': [ // Sliding Door
-    { doorHardwareId: 'dhw-003', itemQty: 1 },  // Handle/Pull
-    { doorHardwareId: 'dhw-004', itemQty: 1 },  // Lock/Cylinder
-    { doorHardwareId: 'dhw-007', itemQty: 1 },  // Threshold
-    { doorHardwareId: 'dhw-010', itemQty: 1 },  // Auto-Operator
-  ],
-  'sys-007': [ // Revolving Door
-    { doorHardwareId: 'dhw-006', itemQty: 4 },  // Pivots
-    { doorHardwareId: 'dhw-009', itemQty: 1 },  // Sweep
-    { doorHardwareId: 'dhw-010', itemQty: 1 },  // Auto-Operator
-    { doorHardwareId: 'dhw-011', itemQty: 1 },  // Card Reader
-  ],
-}
-```
+### Anti-Pattern 2: New React Context for Selection
+**What:** Creating a SelectionContext for bulk selection state.
+**Why bad:** Overkill for a single-view feature. Would cause unnecessary re-renders across the tree.
+**Instead:** `useState` in TakeoffView, pass `isSelected` boolean prop to each `LineItemRow`.
 
-### Pattern 3: Sub-Row Rendering for Print Layout
+### Anti-Pattern 3: Modifying `settings.doorHardware` for Custom Items
+**What:** Pushing custom items into the global door hardware catalog.
+**Why bad:** Custom items are project-scoped. Putting them in global settings makes them visible to all projects and requires cleanup on project delete.
+**Instead:** `project.customHardware` with merge at use.
 
-**What:** Door hardware appears as a visually distinct sub-row below the main line item row, not inside the expanded detail panel. This keeps the compact/collapsed line item row clean while showing hardware at a glance.
+### Anti-Pattern 4: Shared Array References in Duplicate
+**What:** Relying on immutable update patterns to protect shared arrays from `{ ...item }` spread.
+**Why bad:** Fragile. Any future direct manipulation breaks silently. Structural sharing is an optimization, not a correctness guarantee.
+**Instead:** Always deep-copy mutable fields in `deepCopyLineItem`.
 
-**When to use:** Only for line items whose `systemTypeId` is a door type (sys-007, sys-008, sys-009) AND the line item has door hardware entries.
+### Anti-Pattern 5: Separate Bulk Apply Hook
+**What:** Creating `useBulkTemplate` as a new hook.
+**Why bad:** It needs the same setState/recalc/cascade pattern as `useLineItems`. Duplicating that wiring creates maintenance burden.
+**Instead:** Add `bulkApplyTemplate` method to existing `useLineItems` hook.
 
-**Trade-offs:** Requires the `LineItemRow` component to conditionally render a child row. The sub-row must be styled to clearly belong to the parent line item (indentation, lighter background) without breaking the list layout or print margins.
+## Integration Points Summary
 
-## Data Flow
+### New Files
 
-### Door Hardware Calculation Flow
+| File | Purpose |
+|------|---------|
+| `src/hooks/use-custom-hardware.ts` | Custom hardware CRUD hook + pure mutation functions |
+| `src/calc/merged-catalog.ts` | `getMergedHardwareCatalog` utility function |
 
-```
-User selects "Swing Door" system type
-    |
-    v
-useLineItems.updateLineItem({ systemTypeId: 'sys-009' })
-    |
-    ├──> Is door type? YES
-    |    |
-    |    v
-    |    doorHardware is empty?
-    |    |
-    |    ├──> YES: auto-populate from DOOR_HARDWARE_DEFAULTS['sys-009']
-    |    └──> NO: keep existing (user already customized)
-    |
-    v
-calcFullLineItem() orchestrator
-    |
-    ├──> calcMaterialCost(sqft, perimeter, glass, frame, genericHardware, quantity)
-    |        returns glassCost + frameCost + genericHardwareCost
-    |
-    ├──> calcDoorHardwareCost(doorHardware, customDoorHardware, catalog, quantity)
-    |        returns doorHardwareCost
-    |
-    ├──> materialCost = glassCost + frameCost + genericHardwareCost + doorHardwareCost
-    |
-    ├──> calcLaborCost(manHours, loadedRate)
-    ├──> calcEquipmentCost(equipment, crewDays)
-    |
-    v
-lineTotal = materialCost + laborCost + equipmentCost  (C-033 preserved)
-```
-
-### State Management for Door Hardware
-
-```
-User toggles hinge checkbox in DoorHardwareEditor
-    |
-    v
-useDoorHardware.toggleItem('dhw-001')
-    |
-    ├──> Compute updated doorHardware[] array
-    |
-    v
-useLineItems.updateLineItem(itemId, { doorHardware: updatedArray })
-    |
-    v
-Hook calls calcFullLineItem() (includes door hardware cost)
-    |
-    v
-AppStoreProvider debounce → localStorage (500ms)
-```
-
-### Key Data Flows
-
-1. **System type selection (door):** User picks door type -> hook checks if door type -> auto-populates defaults -> recalculates material cost with door hardware -> persists to localStorage.
-
-2. **Hardware editing:** User toggles/edits items in DoorHardwareEditor -> `useDoorHardware` builds updated `doorHardware[]` -> delegates to `updateLineItem` -> `calcFullLineItem` recomputes material cost -> persists.
-
-3. **Custom item addition:** User enters name + cost -> `useDoorHardware.addCustomItem()` appends to `customDoorHardware[]` -> same flow as above.
-
-4. **Schema migration (load):** App boots -> `loadAppState()` detects v2 -> `migrateState()` adds `doorHardware: []` and `customDoorHardware: []` to all existing line items -> saves as v3.
-
-## Integration Points
-
-### Internal Boundaries
-
-| Boundary | Communication | Notes |
-|----------|---------------|-------|
-| `DoorHardwareSubRow` <-> `LineItemRow` | Props: doorHardware entries, catalog, onEdit callback | Sub-row is a child component of LineItemRow, rendered conditionally |
-| `useDoorHardware` <-> `useLineItems` | `useDoorHardware` calls `updateLineItem(id, { doorHardware, customDoorHardware })` | Door hardware hook wraps line item hook — no separate state tree |
-| `door-hardware-calc` <-> `line-total-calc` | `calcFullLineItem` calls `calcDoorHardwareCost()` and adds result to materialCost | Pure function composition, same pattern as existing equipment calc |
-| `door-defaults.ts` <-> `use-line-items.ts` | Hook imports defaults map; reads on system type change | Static config, no runtime state |
-| `seed-door-hardware.ts` <-> `AppSettings` | New `doorHardware` array added to AppSettings; loaded from seed data | Same pattern as existing `hardware`, `equipment` arrays |
-
-### Modification Surface (Existing Files)
+### Modified Files
 
 | File | Change | Scope |
 |------|--------|-------|
-| `src/types/index.ts` | Add `DoorHardwareItem`, `DoorHardwareEntry`, `CustomDoorHardware`; extend `LineItem` with two new fields; extend `AppSettings` with `doorHardware` catalog | Type definitions only |
-| `src/calc/material-calc.ts` | `calcMaterialCost` signature gains optional `doorHardwareCost` param OR door hardware cost added externally in `line-total-calc` | Prefer external addition to minimize signature changes |
-| `src/calc/line-total-calc.ts` | Call `calcDoorHardwareCost()` for door-type line items; add result to materialCost | 5-10 lines |
-| `src/hooks/use-line-items.ts` | Auto-populate `doorHardware[]` when system type changes to door type | ~15 lines in updateLineItem |
-| `src/views/TakeoffView.tsx` | Render `DoorHardwareSubRow` below door-type `LineItemRow` components | Conditional render block |
-| `src/data/index.ts` | Export new seed data; include in `DEFAULT_SETTINGS` | 3-4 lines |
-| `src/storage/storage-service.ts` | Bump schema version to 3; migrate existing LineItems to include empty door hardware arrays; add doorHardware to settings | ~15 lines in migrateState |
+| `src/types/index.ts` | Add `customHardware: Hardware[]` to `Project` | 1 field |
+| `src/calc/line-total-calc.ts` | Add optional `customHardware` param, merge catalog before calc | ~5 lines |
+| `src/calc/template-apply.ts` | Add `applyTemplateBulk` export | ~10 lines |
+| `src/calc/index.ts` | Export `getMergedHardwareCatalog`, `applyTemplateBulk`, `deepCopyLineItem` | 3 lines |
+| `src/hooks/use-line-items.ts` | Fix `duplicateLineItem` with `deepCopyLineItem`, add `bulkApplyTemplate` | ~30 lines |
+| `src/hooks/use-door-hardware.ts` | Pass merged catalog (including customHardware) to `applyAddDoorHardware` | ~5 lines |
+| `src/views/ProjectSetupView.tsx` | Add Custom Hardware section with add/edit/delete list | ~50 lines |
+| `src/views/TakeoffView.tsx` | Selection state, bulk action bar, checkbox props, pass merged catalog | ~60 lines |
+| `src/storage/storage-service.ts` | v4->v5 migration adding `customHardware: []` to projects | ~10 lines |
+| `src/data/index.ts` | Add `customHardware: []` to default project factory if exists | 1 line |
+
+### Unchanged Files (verification)
+
+| File | Why Unchanged |
+|------|---------------|
+| `src/calc/door-hardware-calc.ts` | Already parameterized -- takes catalog as argument |
+| `src/calc/door-hardware-helpers.ts` | Auto-populate uses seed defaults, not custom items |
+| `src/calc/summary-calc.ts` | Works on lineItem totals, hardware-agnostic |
+| `src/hooks/use-hardware-templates.ts` | Templates are global, not project-scoped |
+| `src/views/SettingsView.tsx` | Global template management, unchanged |
 
 ## Suggested Build Order
 
-Dependencies between components dictate this sequence:
+Build order follows dependency chains. Each phase is independently testable:
 
-### Phase 1: Data Foundation (no UI, no calc changes)
+1. **Deep-copy fix** (standalone, no dependencies)
+   - Extract `deepCopyLineItem` pure function
+   - Fix `duplicateLineItem` in `useLineItems`
+   - Tests: verify array independence after duplication
+   - Rationale: simplest change, fixes existing technical debt, no type changes
 
-1. **Types** — Add `DoorHardwareItem`, `DoorHardwareEntry`, `CustomDoorHardware` to `types/index.ts`; extend `LineItem` and `AppSettings`
-2. **Seed data** — Create `seed-door-hardware.ts` (12 items) and `door-defaults.ts` (3 default sets)
-3. **Data index** — Wire into `data/index.ts` and `DEFAULT_SETTINGS`
-4. **Schema migration** — v2->v3 in `storage-service.ts`
+2. **Custom hardware data model + migration** (type change + persistence)
+   - Add `customHardware` to `Project` type
+   - Schema migration v4->v5
+   - Update default project factory
+   - Tests: migration test with existing v4 data
+   - Rationale: type foundation needed by all subsequent phases
 
-*Rationale: Everything else depends on types and data existing. Schema migration must land with the type changes so existing users' data does not break.*
+3. **Custom hardware CRUD hook** (state management)
+   - `useCustomHardware` hook with pure mutation functions
+   - Include delete cascade logic (strip orphaned hardware refs from line items)
+   - Tests: pure function unit tests for add/update/delete/cascade
+   - Rationale: depends on type from phase 2, needed before UI
 
-### Phase 2: Calculation Engine
+4. **Custom hardware in calc pipeline** (wires into existing calc)
+   - Add `customHardware` param to `calcFullLineItem`
+   - `getMergedHardwareCatalog` utility
+   - Update all `calcFullLineItem` call sites to pass custom hardware
+   - Tests: calc tests with mixed global + custom hardware items
+   - Rationale: depends on type from phase 2, needed before UI display is correct
 
-5. **`door-hardware-calc.ts`** — Pure function: `calcDoorHardwareCost(entries, customItems, catalog, doorQty)`. Unit-testable in isolation.
-6. **`line-total-calc.ts` modification** — Call `calcDoorHardwareCost` for door-type items, add to materialCost.
-7. **Tests** — Unit tests for `door-hardware-calc.ts`; update `verify-calc.ts` with door hardware assertions.
+5. **Custom hardware UI** (visible to user)
+   - Custom Hardware section in ProjectSetupView
+   - Pass merged catalog to DoorHardwarePanel in TakeoffView
+   - Update `useDoorHardware` to validate against merged catalog
+   - Tests: manual verification (matching existing test approach for views)
+   - Rationale: depends on hook (phase 3) and calc (phase 4)
 
-*Rationale: Calc must work before UI can display correct numbers. Tests prove the calc pipeline is correct before wiring UI.*
+6. **Bulk template application** (new feature, depends on merged catalog)
+   - `applyTemplateBulk` pure function
+   - `bulkApplyTemplate` in `useLineItems`
+   - Selection state + bulk action bar in TakeoffView
+   - Tests: pure function tests for batch apply, selection filtering
+   - Rationale: most complex UI change, uses merged catalog from phase 5
 
-### Phase 3: State Management
+## Scalability Considerations
 
-8. **`use-door-hardware.ts`** — Hook with `toggleItem`, `setItemQty`, `addCustomItem`, `removeCustomItem`, `removeItem`
-9. **`use-line-items.ts` modification** — Auto-populate defaults on door system type selection
-
-*Rationale: Hook wraps calc and state. Depends on types, seed data, and calc all existing.*
-
-### Phase 4: UI Components
-
-10. **`DoorHardwareSubRow.tsx`** — Compact display: item names, quantities, subtotal
-11. **`DoorHardwareEditor.tsx`** — Full edit panel: checkboxes with qty spinners, custom item form
-12. **`TakeoffView.tsx` modification** — Render sub-row below door line items, wire editor into expanded panel
-
-*Rationale: UI depends on all lower layers. Build display component first (read-only), then editor (read-write).*
-
-## Anti-Patterns
-
-### Anti-Pattern 1: Mixing Door Hardware into Existing Hardware Arrays
-
-**What people do:** Add door hardware items to the existing `SEED_HARDWARE` array and reuse `hardwareIds: string[]` on LineItem.
-**Why it's wrong:** The existing hardware model is 1:1 (one item per unit). Door hardware needs per-item quantities (3 hinges per door). Mixing them creates ambiguity about which items have per-item qty and which do not. It also pollutes the hardware checklist for non-door line items with irrelevant door items.
-**Do this instead:** Separate `DoorHardwareItem` catalog and `doorHardware: DoorHardwareEntry[]` array on LineItem. Keep existing `hardware`/`hardwareIds` untouched.
-
-### Anti-Pattern 2: Storing Door Hardware Cost as a Separate Field on LineItem
-
-**What people do:** Add `doorHardwareCost: number` as a top-level computed field on LineItem alongside `materialCost`, `laborCost`, `equipmentCost`.
-**Why it's wrong:** Breaks C-033 (`lineTotal = materialCost + laborCost + equipmentCost`). Every downstream consumer (running totals, SOV, summary) would need updating. Door hardware is material — it should roll into `materialCost`.
-**Do this instead:** Add door hardware cost to `materialCost` inside `calcFullLineItem`. Downstream code sees a higher materialCost with zero awareness of door hardware specifics.
-
-### Anti-Pattern 3: Auto-Overwriting User Edits on System Type Change
-
-**What people do:** Always replace `doorHardware[]` with defaults when system type changes, even if the estimator has already customized the list.
-**Why it's wrong:** Destroys user work. An estimator who added a panic device and removed weatherstrip loses those edits.
-**Do this instead:** Only auto-populate when: (a) switching from a non-door type to a door type, or (b) `doorHardware` array is empty. If switching between door types (e.g., Swing to Sliding), prompt or preserve existing entries.
-
-## Scaling Considerations
-
-| Scale | Architecture Adjustments |
-|-------|--------------------------|
-| Current (single user, localStorage) | No changes needed. 12 door hardware items + 3 default sets fit comfortably in memory and localStorage. |
-| Multi-user (future Supabase backend) | `DoorHardwareItem` catalog becomes a database table. `doorHardware` entries on LineItem become a junction table with FK to catalog. Migration is straightforward because the data model already separates catalog from entries. |
-| Large projects (100+ line items) | Door hardware sub-row rendering is conditional (only door types). Performance impact is proportional to door count, not total line item count. Memo on sub-row component prevents re-renders. |
-
-### Scaling Priorities
-
-1. **First bottleneck:** localStorage size limit (5MB). Each door line item adds ~200 bytes for hardware entries. At 1000 door line items, that is ~200KB — well within limits. Not a concern for Phase 1.
-2. **Second bottleneck:** Re-render performance with many expanded door hardware editors. Solved by `memo()` on sub-row and editor components, same pattern as existing `LineItemRow`.
-
-## Door Type Detection
-
-A utility function is needed to determine if a system type is a door type. This is used by the hook (auto-populate), the view (sub-row rendering), and the calc (door hardware cost).
-
-```typescript
-const DOOR_SYSTEM_IDS = new Set(['sys-007', 'sys-008', 'sys-009'])
-
-export function isDoorSystemType(systemTypeId: string): boolean {
-  return DOOR_SYSTEM_IDS.has(systemTypeId)
-}
-```
-
-This should live in `src/data/door-defaults.ts` alongside the default hardware sets, since the set of door system IDs is configuration, not calculation.
+| Concern | Current Scale | Notes |
+|---------|--------------|-------|
+| Merged catalog size | 12 global + ~5 custom = 17 items | O(n) merge is negligible even at 100 items |
+| Bulk apply recalc | ~5 selected items typical | `calcFullLineItem` is fast; 50 items < 1ms total |
+| Selection state | `Set<string>` in memory | Set operations are O(1), no concern |
+| Custom hardware in localStorage | ~100 bytes per item | No concern until thousands of items |
 
 ## Sources
 
-- Existing codebase analysis: `src/types/index.ts`, `src/calc/line-total-calc.ts`, `src/calc/material-calc.ts`, `src/hooks/use-line-items.ts`, `src/data/seed-hardware.ts`, `src/data/seed-systems.ts`, `src/views/TakeoffView.tsx`, `src/storage/storage-service.ts`
-- Project requirements: `.planning/PROJECT.md` (door hardware selection requirements)
-- Existing architecture: `.planning/codebase/ARCHITECTURE.md` (current system patterns)
-- Constraint registry: `CONSTRAINTS.md` (C-002, C-016, C-033 particularly relevant)
+- Direct codebase analysis of all files listed above (HIGH confidence)
+- Existing architectural patterns established in v1.0 and v1.1 (HIGH confidence)
+- No external research needed -- all features are integration patterns within existing architecture
 
 ---
-*Architecture research for: door hardware in glazing estimation*
-*Researched: 2026-03-02*
+*Architecture research for: v1.2 custom hardware, deep-copy, bulk template apply*
+*Researched: 2026-03-04*
