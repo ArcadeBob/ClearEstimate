@@ -3,7 +3,7 @@
 ## Milestones
 
 - ✅ **v1.0 Door Hardware Selection** — Phases 1-5 (shipped 2026-03-04)
-- 🚧 **v1.1 Hardware Set Templates** — Phases 6-8 (in progress)
+- ✅ **v1.1 Hardware Set Templates** — Phases 6-8 (shipped 2026-03-04)
 
 ## Phases
 
@@ -18,13 +18,13 @@
 
 </details>
 
-### 🚧 v1.1 Hardware Set Templates (In Progress)
+### ✅ v1.1 Hardware Set Templates (Shipped 2026-03-04)
 
 **Milestone Goal:** Estimators can define a hardware set once and apply it to any door line item instantly
 
 - [x] **Phase 6: Template Data & Persistence** - Type definitions, storage schema, and persistence plumbing for hardware set templates
-- [ ] **Phase 7: Template CRUD in Settings** - Create, rename, edit, and delete hardware templates in the Settings view
-- [ ] **Phase 8: Template Application in Edit Panel** - Dropdown picker to apply templates to door line items in the hardware editing panel
+- [x] **Phase 7: Template CRUD in Settings** - Create, rename, edit, and delete hardware templates in the Settings view
+- [x] **Phase 8: Template Application in Edit Panel** - Dropdown picker to apply templates to door line items in the hardware editing panel
 
 ## Phase Details
 
@@ -54,7 +54,7 @@ Plans:
 **Plans:** 1 plan
 
 Plans:
-- [ ] 07-01-PLAN.md — Template CRUD hook and Settings Templates tab UI
+- [x] 07-01-PLAN.md — Template CRUD hook and Settings Templates tab UI
 
 ### Phase 8: Template Application in Edit Panel
 **Goal**: Users can apply a saved template to any door line item from the hardware editing panel
@@ -68,7 +68,7 @@ Plans:
 **Plans:** 1 plan
 
 Plans:
-- [ ] 08-01-PLAN.md — Template picker dropdown and apply behavior
+- [x] 08-01-PLAN.md — Template picker dropdown and apply behavior
 
 ## Progress
 
@@ -83,5 +83,5 @@ Phases execute in numeric order: 6 → 7 → 8
 | 3. State & Behavior | v1.0 | 1/1 | Complete | 2026-03-03 |
 | 4. UI Components | v1.0 | 1/1 | Complete | 2026-03-04 |
 | 6. Template Data & Persistence | v1.1 | 1/1 | Complete | 2026-03-04 |
-| 7. Template CRUD in Settings | v1.1 | 0/1 | Not started | - |
-| 8. Template Application in Edit Panel | v1.1 | 0/1 | Not started | - |
+| 7. Template CRUD in Settings | v1.1 | 1/1 | Complete | 2026-03-04 |
+| 8. Template Application in Edit Panel | v1.1 | 1/1 | Complete | 2026-03-04 |

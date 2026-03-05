@@ -17,9 +17,9 @@ Requirements for hardware set templates milestone. Each maps to roadmap phases.
 
 ### Template Application
 
-- [ ] **APPL-01**: User can select a template from a dropdown in the door hardware editing panel
-- [ ] **APPL-02**: Applying a template replaces the line item's current hardware selection with the template's items and quantities
-- [ ] **APPL-03**: User can modify hardware after applying a template (template is a starting point, not locked)
+- [x] **APPL-01**: User can select a template from a dropdown in the door hardware editing panel
+- [x] **APPL-02**: Applying a template replaces the line item's current hardware selection with the template's items and quantities
+- [x] **APPL-03**: User can modify hardware after applying a template (template is a starting point, not locked)
 
 ## Future Requirements
 
@@ -51,9 +51,9 @@ Deferred to later milestones. Tracked but not in current roadmap.
 | TMPL-03 | Phase 7 | Complete |
 | TMPL-04 | Phase 7 | Complete |
 | TMPL-05 | Phase 6 | Complete |
-| APPL-01 | Phase 8 | Pending |
-| APPL-02 | Phase 8 | Pending |
-| APPL-03 | Phase 8 | Pending |
+| APPL-01 | Phase 8 | Complete |
+| APPL-02 | Phase 8 | Complete |
+| APPL-03 | Phase 8 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 8 total
