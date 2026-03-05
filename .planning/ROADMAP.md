@@ -36,10 +36,10 @@
   1. A HardwareSetTemplate type exists with name, hardware items, and quantities
   2. Templates are stored in AppSettings and survive browser refresh (localStorage)
   3. Schema migration preserves existing user data when upgrading to the new schema version
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] 06-01: Template types, storage schema, and migration
+- [ ] 06-01-PLAN.md — Template types, seed data, storage migration v3->v4
 
 ### Phase 7: Template CRUD in Settings
 **Goal**: Users can fully manage hardware set templates from the Settings view
